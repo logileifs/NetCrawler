@@ -1,13 +1,18 @@
 #! /usr/bin/env python
 #File code.py
 
+import os
 import sys
 from pysnmp.entity.rfc3413.oneliner import cmdgen
-from NetCrawler import Crawler
 
-cmdGen = cmdgen.CommandGenerator()
+from classes import NetCrawler
 
 def main():
+"""
+This is a test for the CI server
+"""
+	cmdGen = cmdgen.CommandGenerator()
+
 	print 'Number of arguments:', len(sys.argv), 'arguments.'
 	print 'Argument List:', str(sys.argv)
 	if len(sys.argv) > 1:
@@ -15,11 +20,11 @@ def main():
 		print('argv2: ' + str(sys.argv[2]))
 		address = sys.argv[1]
 		port = sys.argv[2]
-		crawler = Crawler(address, port)
+		crawler = NetCrawler(address, port)
 	else:
 		address = 'demo.snmplabs.com'
 		port = 161
-		crawler = Crawler(address, port)
+		crawler = NetCrawler(address, port)
 
 	errorIndication, errorStatus, errorIndex, varBinds = cmdGen.getCmd(
 		cmdgen.CommunityData('public'),
@@ -28,8 +33,6 @@ def main():
 		cmdgen.MibVariable('SNMPv2-MIB', 'sysDescr', 0),
 		lookupNames=True, lookupValues=True
 	)
-
-	print(crawler.port, " ", crawler.address)
 
 	# Check for errors and print out results
 	if errorIndication:
