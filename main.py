@@ -10,6 +10,7 @@ from classes import NetCrawler
 def main():
 """
 This is a test for the CI server
+Another test for the CI server
 """
 	cmdGen = cmdgen.CommandGenerator()
 
