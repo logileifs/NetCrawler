@@ -1,11 +1,9 @@
 #! /usr/bin/env python
-#File code.py
+#File main.py
 
 import os
 import sys
-from pysnmp.entity.rfc3413.oneliner import cmdgen
-
-from classes import NetCrawler
+from classes import netcrawler
 
 def main():
 	"""
@@ -13,33 +11,15 @@ def main():
 	Another test for the CI server
 	"""
 
-	cmdGen = cmdgen.CommandGenerator()
-
 	print 'Number of arguments:', len(sys.argv), 'arguments'
 	print 'Argument List:', str(sys.argv)
 	
 	address, port = parseInput(sys.argv)
-	crawler = NetCrawler.Crawler(port, address)
+	crawler = netcrawler.Crawler(port, address)
 
 	print('Address is ' + str(crawler.address) + ' Port is ' + str(crawler.port))
 
-	errorIndication, errorStatus, errorIndex, varBinds = cmdGen.getCmd(
-		cmdgen.CommunityData('public'),
-		#cmdgen.UdpTransportTarget(('195.218.195.228', 161)),
-		#cmdgen.UdpTransportTarget(('192.168.1.92', 161)),
-	    cmdgen.UdpTransportTarget((crawler.address, crawler.port)),
-		cmdgen.MibVariable('SNMPv2-MIB', 'sysDescr', 0),
-		lookupNames=True, lookupValues=True)
-
-	# Check for errors and print out results
-	if errorIndication:
-		print(errorIndication)
-	elif errorStatus:
-		print(errorStatus)
-	else:
-		print('port number: ' + str(port))
-		for name, val in varBinds:
-			print('%s = %s' % (name.prettyPrint(), val.prettyPrint()))
+	crawler.getNext()
 
 
 def parseInput(args):
