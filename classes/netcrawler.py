@@ -14,3 +14,9 @@ class Crawler:
 
 	def getAddress(self):
 		return self.address
+
+	def getHello(self):
+		return 'hello'
+
+	def getHelloWorld(self):
+		return 'hello world'
