@@ -19,13 +19,15 @@ def main():
 
 	print('Address is ' + str(crawler.address) + ' Port is ' + str(crawler.port))
 
-#	crawler.getPorts()
-#	crawler.getMacs()
-#	crawler.getMacTable()
-#	crawler.getIPs()
-#	crawler.getMacOnPort()
-#	crawler.getMacForIP()
 	crawler.getVLANs()
+
+	print('VLANs in range:')
+	for vlan in crawler.vlans:
+		print(vlan.number)
+
+	for vlan in crawler.vlans:
+		crawler.getMACsOnVLAN(vlan)
+
 
 def parseInput(args):
 	foundPort = False

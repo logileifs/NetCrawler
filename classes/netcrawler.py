@@ -27,142 +27,6 @@ class Crawler:
 	def getHello(self):
 		return 'hello'
 
-	
-	def getPorts(self):
-		errorIndication, errorStatus, errorIndex, varBindTable = self.cmdGen.nextCmd(
-			cmdgen.CommunityData('menandmice'),
-			cmdgen.UdpTransportTarget(('192.168.60.254', 161)),
-			'1.3.6.1.2.1.17.4.3.1.2'
-		)
-
-		if errorIndication:
-			print(errorIndication)
-		else:
-			if errorStatus:
-				print('%s at %s' % (
-					errorStatus.prettyPrint(),
-					errorIndex and varBindTable[-1][int(errorIndex)-1] or '?'
-					)
-				)
-			else:
-				for varBindTableRow in varBindTable:
-					for name, val in varBindTableRow:
-						self.connectedPorts.append(val)
-						print('%s = %s' % (name.prettyPrint(), val.prettyPrint()))
-
-		print('getPorts')
-		for port in self.connectedPorts:
-			print(port)
-
-
-	def getMacs(self):
-		errorIndication, errorStatus, errorIndex, varBindTable = self.cmdGen.nextCmd(
-			cmdgen.CommunityData('menandmice'),
-			cmdgen.UdpTransportTarget(('192.168.60.254', 161)),
-			'1.3.6.1.2.1.17.4.3.1.1'
-		)
-
-		if errorIndication:
-			print(errorIndication)
-		else:
-			if errorStatus:
-				print('%s at %s' % (
-					errorStatus.prettyPrint(),
-					errorIndex and varBindTable[-1][int(errorIndex)-1] or '?'
-					)
-				)
-			else:
-				for varBindTableRow in varBindTable:
-					for name, val in varBindTableRow:
-						self.connectedMacs.append(val)
-						print('%s = %s' % (name.prettyPrint(), val.prettyPrint()))
-
-		print('getMacs')
-		for mac in self.connectedMacs:
-			print(mac.prettyPrint())
-
-
-	def getMacTable(self):
-		connectedMacs = []
-		errorIndication, errorStatus, errorIndex, varBindTable = self.cmdGen.nextCmd(
-			cmdgen.CommunityData('menandmice'),
-			cmdgen.UdpTransportTarget(('192.168.60.254', 161)),
-			'1.3.6.1.2.1.4.22'
-		)
-
-		if errorIndication:
-			print(errorIndication)
-		else:
-			if errorStatus:
-				print('%s at %s' % (
-					errorStatus.prettyPrint(),
-					errorIndex and varBindTable[-1][int(errorIndex)-1] or '?'
-					)
-				)
-			else:
-				for varBindTableRow in varBindTable:
-					for name, val in varBindTableRow:
-						connectedMacs.append(val)
-						print('%s = %s' % (name.prettyPrint(), val.prettyPrint()))
-
-		print('getMacTable')
-		for mac in connectedMacs:
-			print(mac.prettyPrint())
-
-
-	def getIPs(self):
-		errorIndication, errorStatus, errorIndex, varBindTable = self.cmdGen.nextCmd(
-			cmdgen.CommunityData('menandmice'),
-			cmdgen.UdpTransportTarget(('192.168.60.254', 161)),
-			'1.3.6.1.2.1.4.22.1.3.29'
-		)
-
-		if errorIndication:
-			print(errorIndication)
-		else:
-			if errorStatus:
-				print('%s at %s' % (
-					errorStatus.prettyPrint(),
-					errorIndex and varBindTable[-1][int(errorIndex)-1] or '?'
-					)
-				)
-			else:
-				for varBindTableRow in varBindTable:
-					for name, val in varBindTableRow:
-						self.connectedIPs.append(val)
-						print('%s = %s' % (name.prettyPrint(), val.prettyPrint()))
-
-		print('getIPs')
-		for ip in self.connectedIPs:
-			print(ip.prettyPrint())
-
-
-	def getMacForIP(self):
-		print('getMacForIP')
-		print('searching for ' + self.connectedMacs[0].prettyPrint())
-		errorIndication, errorStatus, errorIndex, varBindTable = self.cmdGen.nextCmd(
-			cmdgen.CommunityData('menandmice'),
-			cmdgen.UdpTransportTarget(('192.168.60.254', 161)),
-			'1.3.6.1.2.1.4.22.1.2.29'
-		)
-
-		if errorIndication:
-			print(errorIndication)
-		else:
-			if errorStatus:
-				print('%s at %s' % (
-					errorStatus.prettyPrint(),
-					errorIndex and varBindTable[-1][int(errorIndex)-1] or '?'
-					)
-				)
-			else:
-				for varBindTableRow in varBindTable:
-					for name, val in varBindTableRow:
-						#connectedMacs.append(val)
-						print('%s = %s' % (name.prettyPrint(), val.prettyPrint()))
-						if (val in self.connectedMacs):
-							print(self.connectedMacs[0].prettyPrint() + ' has ip address: ' + val.prettyPrint())
-
 
 	def getVLANs(self):
 		print('getVLANs')
@@ -185,7 +49,7 @@ class Crawler:
 			else:
 				for varBindTableRow in varBindTable:
 					for name, val in varBindTableRow:
-						print('%s = %s' % (name.prettyPrint(), val.prettyPrint()))
+						#print('%s = %s' % (name.prettyPrint(), val.prettyPrint()))
 						replies.append(name)
 
 		for reply in replies:
@@ -193,11 +57,11 @@ class Crawler:
 			vlan.number = int(str(reply).split('.')[-1])
 			self.vlans.append(vlan)
 
-		print('vlans:')
-		for vlan in self.vlans:
-			print(vlan.number)
+#		print('vlans:')
+#		for vlan in self.vlans:
+#			print(vlan.number)
 		
-		self.getMACsOnVLAN(self.vlans[1])
+#		self.getMACsOnVLAN(self.vlans[1])
 
 
 	def getMACsOnVLAN(self, vlan):
@@ -227,17 +91,17 @@ class Crawler:
 						vlan.hosts.append(host)
 
 		for host in vlan.hosts:
-			print(host.mac.prettyPrint())
-			self.getIPForHost(host.mac)
+			#print(host.mac.prettyPrint())
+			self.getIPForHost(vlan, host)
 #			print(mac.prettyPrint())
 #			print(vlan.convertMacToOct(mac))
 
 
-	def getIPForHost(self, mac):
-		print('getIPForHost ' + str(mac.prettyPrint()))
+	def getIPForHost(self, vlan, host):
+		print('getIPForHost ' + str(host.mac.prettyPrint()))
 
 		errorIndication, errorStatus, errorIndex, varBindTable = self.cmdGen.nextCmd(
-			cmdgen.CommunityData('menandmice@60'),
+			cmdgen.CommunityData('menandmice@'+str(vlan.number)),
 			cmdgen.UdpTransportTarget(('192.168.60.254', 161)),
 			'1.3.6.1.2.1.4.22.1.2.29'
 		)
@@ -258,6 +122,7 @@ class Crawler:
 						reply = str(name)
 						if(reply.find('1.3.6.1.2.1.4.22.1.2.29.') != -1):
 							ip = reply[24:]
+							host.ip = ip
 #							print(ip[24:])
-						if (val == mac):
-							print('mac address ' + str(mac.prettyPrint()) + ' has ip: ' + ip)
+						if (val == host.mac):
+							print('mac address ' + str(host.mac.prettyPrint()) + ' has ip: ' + ip)
