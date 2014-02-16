@@ -11,30 +11,42 @@ class Crawler:
 		self.address = args[1]
 		self.cmdGen = cmdgen.CommandGenerator()
 		self.vlans = []
+		self.hosts = []
+		self.communityStr = 'menandmice'
 
-		self.connectedPorts = []
-		self.connectedMacs = []
-		self.connectedIPs = []
-
-	def getPort(self):
-		return self.port
-
-
-	def getAddress(self):
-		return self.address
+		host = Host()
+		host.ip = self.address
+		self.hosts.append(host)
 
 
-	def getHello(self):
-		return 'hello'
+	def getNeighbors(self):
+		print('getNeighbors')
+
+		varBindTable = self.snmpWalk(self.address, '1.3.6.1.4.1.9.9.23.1')
+
+		for varBindTableRow in varBindTable:
+			for name, val in varBindTableRow:
+				if(str(name).find('1.3.6.1.4.1.9.9.23.1.2.1.1.20') != -1):
+					print('FOUND IP ADDRESS')
+					host = Host()
+					host.ip = val
+					self.hosts.append(host)
+				print('%s = %s' % (name.prettyPrint(), val.prettyPrint()))
+
+		print('NEIGHBORS FOUND:')
+		for counter, host in enumerate(self.hosts):
+			if(counter == 0):
+				print(host.ip)
+				continue
+			host.ip = host.hexToOct(host.ip)
+			print str(host.ip)
 
 
-	def getVLANs(self):
-		print('getVLANs')
-		replies = []
+	def snmpWalk(self, address, oid):
 		errorIndication, errorStatus, errorIndex, varBindTable = self.cmdGen.nextCmd(
-			cmdgen.CommunityData('menandmice'),
-			cmdgen.UdpTransportTarget(('192.168.60.254', 161)),
-			'.1.3.6.1.4.1.9.9.46.1.3.1.1.2'
+			cmdgen.CommunityData(self.communityStr),
+			cmdgen.UdpTransportTarget((address, self.port)),
+			oid
 		)
 
 		if errorIndication:
@@ -47,10 +59,22 @@ class Crawler:
 					)
 				)
 			else:
-				for varBindTableRow in varBindTable:
-					for name, val in varBindTableRow:
+				#for varBindTableRow in varBindTable:
+					#for name, val in varBindTableRow:
 						#print('%s = %s' % (name.prettyPrint(), val.prettyPrint()))
-						replies.append(name)
+						
+				return varBindTable
+
+
+	def getVLANs(self):
+		print('getVLANs')
+		replies = []
+
+		varBindTable = self.snmpWalk(self.address, '.1.3.6.1.4.1.9.9.46.1.3.1.1.2')
+
+		for varBindTableRow in varBindTable:
+			for name, val in varBindTableRow:
+				replies.append(name)
 
 		for reply in replies:
 			vlan = VLAN()

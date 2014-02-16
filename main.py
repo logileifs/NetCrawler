@@ -19,14 +19,17 @@ def main():
 
 	print('Address is ' + str(crawler.address) + ' Port is ' + str(crawler.port))
 
-	crawler.getVLANs()
+#	crawler.getVLANs()
+	crawler.getNeighbors()
 
+	"""
 	print('VLANs in range:')
 	for vlan in crawler.vlans:
 		print(vlan.number)
 
 	for vlan in crawler.vlans:
 		crawler.getMACsOnVLAN(vlan)
+		"""
 
 
 def parseInput(args):
