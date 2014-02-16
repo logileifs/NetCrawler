@@ -12,21 +12,24 @@ def main():
 	"""
 
 	print 'Number of arguments:', len(sys.argv), 'arguments'
-	print 'Argument List:', str(sys.argv)
 	
 	address, port = parseInput(sys.argv)
 	crawler = netcrawler.Crawler(port, address)
 
 	print('Address is ' + str(crawler.address) + ' Port is ' + str(crawler.port))
 
-#	crawler.getVLANs()
-	numberOfNeighbors = crawler.getNeighbors(crawler.address)
-	if numberOfNeighbors > 0:
+	if crawler.checkEntryPoint(crawler.address):
+		print('entry point answers snmp CDP requests')
+	numberOfNeighbors = crawler.getNeighbors(crawler.hosts[0])	# get numbers of first host
+	numberOfNeighbors = crawler.getNeighbors(crawler.hosts[1])
+	numberOfNeighbors = crawler.getNeighbors(crawler.hosts[2])
+	"""if numberOfNeighbors > 0:
 		print('found ' + str(numberOfNeighbors) + ' neighbors')
 
 	for host in crawler.hosts:
 		if not host.visited:
 			numberOfNeighbors = crawler.getNeighbors(host.ip)
+			host.visited = True"""
 
 
 def parseInput(args):
