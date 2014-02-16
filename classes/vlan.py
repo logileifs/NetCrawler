@@ -7,9 +7,3 @@ class VLAN:
 		self.macs = []
 		self.ips = []
 		self.hosts = []
-
-
-	def convertMacToOct(self, mac):
-		numbers = str(mac.asNumbers())
-		octet = numbers.replace('(', '').replace(')', '').replace(' ', '').replace(',', '.')
-		return octet
