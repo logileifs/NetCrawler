@@ -16,30 +16,71 @@ class Crawler:
 
 		host = Host()
 		host.ip = self.address
+
+		host.name = self.getHostName()
+
 		self.hosts.append(host)
 
 
-	def getNeighbors(self):
-		print('getNeighbors')
+	def getHostName(self):
+		print ('getHostName')
 
-		varBindTable = self.snmpWalk(self.address, '1.3.6.1.4.1.9.9.23.1')
+		varBinds = self.snmpGet(self.address, '1.3.6.1.4.1.9.9.23.1.3.4.0')
+
+		for name, val in varBinds:
+			#print('%s = %s' % (name.prettyPrint(), val.prettyPrint()))
+			print(val.prettyPrint())
+
+		return str(val)
+
+
+	def getNeighbors(self, address):
+		print('getNeighbors')
+		numOfNeighbors = 0
+
+		varBindTable = self.snmpWalk(address, '1.3.6.1.4.1.9.9.23.1')
 
 		for varBindTableRow in varBindTable:
 			for name, val in varBindTableRow:
 				if(str(name).find('1.3.6.1.4.1.9.9.23.1.2.1.1.20') != -1):
 					print('FOUND IP ADDRESS')
+					numOfNeighbors += 1
 					host = Host()
 					host.ip = val
 					self.hosts.append(host)
-				print('%s = %s' % (name.prettyPrint(), val.prettyPrint()))
+				#print('%s = %s' % (name.prettyPrint(), val.prettyPrint()))
 
 		print('NEIGHBORS FOUND:')
 		for counter, host in enumerate(self.hosts):
 			if(counter == 0):
 				print(host.ip)
 				continue
-			host.ip = host.hexToOct(host.ip)
+			if(host.ip.__class__.__name__ == 'OctetString'):
+				print('class type is OctetString')
+				host.ip = host.hexToOct(host.ip)
+			print(host.ip.__class__.__name__)
 			print str(host.ip)
+
+		return numOfNeighbors
+
+
+	def snmpGet(self, address, oid):
+		errorIndication, errorStatus, errorIndex, varBinds = self.cmdGen.getCmd(
+			cmdgen.CommunityData(self.communityStr),
+			cmdgen.UdpTransportTarget((address, self.port)),
+			cmdgen.MibVariable(oid),
+			lookupNames=True, lookupValues=True
+		)
+
+		# Check for errors and print out results
+		if errorIndication:
+			print(errorIndication)
+		elif errorStatus:
+			print(errorStatus)
+		else:
+			#for name, val in varBinds:
+				#print('%s = %s' % (name.prettyPrint(), val.prettyPrint()))
+				return varBinds
 
 
 	def snmpWalk(self, address, oid):
