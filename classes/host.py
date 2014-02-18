@@ -8,6 +8,7 @@ class Host:
 		self.port = 0
 		self.name = ''
 		self.visited = False
+		self.interface = 0
 
 
 	def hexToOct(self, hexNum):
