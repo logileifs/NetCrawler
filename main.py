@@ -24,9 +24,11 @@ def main():
 	crawler.printHosts()
 	
 	numberOfNeighbors = crawler.getNeighbors(crawler.hosts[0])	# get numbers of first host
-	
+	crawler.getInterface(crawler.hosts[0])
+	crawler.getMAC(crawler.hosts[0])
 	crawler.printHosts()
 	
+	"""
 	crawler.hosts[1].name = crawler.getHostName(crawler.hosts[1].ip)
 	numberOfNeighbors = crawler.getNeighbors(crawler.hosts[1])
 	
@@ -36,6 +38,7 @@ def main():
 	numberOfNeighbors = crawler.getNeighbors(crawler.hosts[2])
 
 	crawler.printHosts()
+	"""
 
 #	crawler.hosts[3].name = crawler.getHostName(crawler.hosts[3].ip)
 #	numberOfNeighbors = crawler.getNeighbors(crawler.hosts[3])
