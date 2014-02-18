@@ -15,3 +15,16 @@ class Host:
 		numbers = str(hexNum.asNumbers())
 		octet = numbers.replace('(', '').replace(')', '').replace(' ', '').replace(',', '.')
 		return octet
+
+	def hexToString(self, hexNum):
+		numbers = str(hexNum.asNumbers())
+		numbers = numbers.replace('(', '').replace(')', '').replace(',', '')
+		numList = numbers.split(' ')
+		
+		del numbers
+		numbers = ''
+		
+		for num in numList:
+			numbers = numbers + str(hex(int(num))[2:].zfill(2))
+		
+		return numbers

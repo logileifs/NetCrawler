@@ -121,12 +121,11 @@ class Crawler:
 
 
 	def getMAC(self, host):
-
 		result = self.snmpGet(host.ip, self.oid.mac + '.' + str(host.interface))
 
 		for name, val in result:
 			print('mac address: ' + val.prettyPrint())
-#			host.mac = 
+			host.mac = host.hexToString(val)
 
 
 	def getNeighbors(self, host):
