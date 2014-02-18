@@ -7,26 +7,27 @@ import main
 class MainTests(unittest.TestCase):
 	
 	def test_parseInput_address(self):
-		args = ['', 'address=195.218.195.228', 'port=161']
-		address, port = main.parseInput(args)
+		args = ['', 'a=195.218.195.228', 'p=161', 'c=public']
+		address, port, community = main.parseInput(args)
 		assert address == '195.218.195.228'
 	
 	def test_parseInput_port(self):
-		args = ['', 'address=195.218.195.228', 'port=1337']
-		address, port = main.parseInput(args)
+		args = ['', 'a=195.218.195.228', 'p=1337', 'c=public']
+		address, port, community = main.parseInput(args)
 		assert port == 1337
 
 	def test_parseInput_defaultPort(self):
-		args = ['', 'address=195.218.195.228']
-		address, port = main.parseInput(args)
+		args = ['', 'a=195.218.195.228', 'c=public']
+		address, port, community = main.parseInput(args)
 		assert port == 161
+
+	def test_parseInput_defaultCommunity(self):
+		args = ['', 'a=195.218.195.228', 'p=1337', 'c=public']
+		address, port, community = main.parseInput(args)
+		assert community == 'public'
 	 
 	def test_parseInput_noArguments(self):
 		args = []
 		with self.assertRaises(SystemExit) as cm:
 			address, port = main.parseInput(args)
-		self.assertEqual(cm.exception.code, 1)
-
-
-
-		
+		self.assertEqual(cm.exception.code, 1)	

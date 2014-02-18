@@ -35,17 +35,19 @@ def main():
 def parseInput(args):
 	foundPort = False
 	foundAddress = False
+	foundCommunity = False
 
 	for arg in args:
 		if(arg == args[0]):
 			continue
-		if(arg[0:5] == 'port='):
+		if(arg[0:2] == 'p='):
 			foundPort = True
-			port = int(arg[5:])
-		if(arg[0:8] == 'address='):
+			port = int(arg[2:])
+		if(arg[0:2] == 'a='):
 			foundAddress = True
-			address = str(arg[8:])
+			address = str(arg[2:])
 		if(arg[0:2] == 'c='):
+			foundCommunity = True
 			community = str(arg[2:])
 
 	if(not foundAddress):
@@ -53,6 +55,9 @@ def parseInput(args):
 	if(not foundPort):
 		port = 161
 		print('No port argument found, using default port 161')
+	if(not foundCommunity):
+		community = 'public'
+		print('Default community set to public')
 
 	return address, port, community
 
