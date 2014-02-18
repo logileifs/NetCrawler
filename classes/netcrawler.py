@@ -20,6 +20,7 @@ class Crawler:
 
 	def checkEntryPoint(self, address):
 		host = Host()
+#		host.ip = address
 		host.name = self.getHostName(address)
 		if(len(host.name)):
 			host.ip = address
@@ -57,7 +58,7 @@ class Crawler:
 
 		# Check for errors and print out results
 		if errorIndication:
-			#self.getError(errorIndication, errorStatus, errorIndex)
+			#self.getError(errorIndication, errorStatus, errorIndex)	# GEYMA
 			print(errorIndication)
 		elif errorStatus:
 			print(errorStatus)
@@ -86,47 +87,64 @@ class Crawler:
 
 
 	def getHostName(self, address):
-		print ('getHostName')
+		#print ('getHostName')
+		hostName = ''
 
 		varBinds = self.snmpGet(address, self.oid.hostName)
-#		varBinds = self.snmpGet(address, '1.1.1.1.1.1.1.1.1.1.1.1.1.1')
 
 		for name, val in varBinds:
-			print(val.prettyPrint())
+			hostName = str(val)
+			#print(val.prettyPrint())
 
-		return str(val)
+		#host.name = hostName
+
+		return hostName
 
 
 	def getNeighbors(self, host):
 		print('getNeighbors for ' + str(host.ip))
-		host.visited = True
 		numOfNeighbors = 0
+		host.visited = True
+		exists = False
 
 		varBindTable = self.snmpWalk(host.ip, self.oid.neighbors)
 
 		for varBindTableRow in varBindTable:
 			for name, val in varBindTableRow:
 				if(str(name).find(self.oid.neighbors) != -1):
-					print('FOUND IP ADDRESS')
+					#print('FOUND IP ADDRESS')
 					if(len(val) != 0):
 						numOfNeighbors += 1
 						newHost = Host()
-						newHost.ip = val
-						self.hosts.append(newHost)
+						if(val.__class__.__name__ == 'OctetString'):
+							newHost.ip = newHost.hexToOct(val)
+#						newHost.ip = val
+						for host in self.hosts:
+							if host.ip == newHost.ip:
+								exists = True
+
+						if not exists:
+							self.hosts.append(newHost)
 				#print('%s = %s' % (name.prettyPrint(), val.prettyPrint()))
 
-		print('NEIGHBORS FOUND:')
+		#print('NEIGHBORS FOUND:')
 		for counter, host in enumerate(self.hosts):
 			if(counter == 0):
-				print(host.ip)
+				#print(host.ip)
 				continue
 			if(host.ip.__class__.__name__ == 'OctetString'):
-				#print('class type is OctetString')
 				host.ip = host.hexToOct(host.ip)
-			#print(host.ip.__class__.__name__)
-			print str(host.ip)
+			#print str(host.ip)
 
 		return numOfNeighbors
+
+
+	def printHosts(self):
+		for counter, host in enumerate(self.hosts):
+			print('\nHost ' + str(counter) + ': ' + host.name)
+			print('visited: ' + str(host.visited))
+			print('ip: ' + host.ip)
+			print('mac: ' + host.mac)
 
 
 	def getVLANs(self):
@@ -143,12 +161,6 @@ class Crawler:
 			vlan = VLAN()
 			vlan.number = int(str(reply).split('.')[-1])
 			self.vlans.append(vlan)
-
-#		print('vlans:')
-#		for vlan in self.vlans:
-#			print(vlan.number)
-		
-#		self.getMACsOnVLAN(self.vlans[1])
 
 
 	def getMACsOnVLAN(self, vlan):
@@ -178,10 +190,7 @@ class Crawler:
 						vlan.hosts.append(host)
 
 		for host in vlan.hosts:
-			#print(host.mac.prettyPrint())
 			self.getIPForHost(vlan, host)
-#			print(mac.prettyPrint())
-#			print(vlan.convertMacToOct(mac))
 
 
 	def getIPForHost(self, vlan, host):
@@ -210,6 +219,5 @@ class Crawler:
 						if(reply.find('1.3.6.1.2.1.4.22.1.2.29.') != -1):
 							ip = reply[24:]
 							host.ip = ip
-#							print(ip[24:])
 						if (val == host.mac):
 							print('mac address ' + str(host.mac.prettyPrint()) + ' has ip: ' + ip)
