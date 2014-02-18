@@ -10,15 +10,12 @@ class Crawler:
 		"""Crawler constructor, takes port and address as arguments"""
 		self.port = args[0]
 		self.address = args[1]					# starting point
+		self.communityStr = args[2]
 		self.cmdGen = cmdgen.CommandGenerator()
 		self.vlans = []
 		self.hosts = []
-		self.communityStr = 'menandmice'
 
 		self.oid = OID()
-
-		#self.checkEntryPoint(self.address)	# check entrypoint
-		
 
 
 	def checkEntryPoint(self, address):
@@ -32,6 +29,24 @@ class Crawler:
 		return False
 
 
+	""" GEYMA
+	def getError(self, indication, status, index):
+		print('GET ERROR')
+		if indication:
+			print(indication)
+		elif status:
+			print(status)
+
+
+	def walkError(self, errorIndication, errorStatus, errorIndex):
+		if errorIndication:
+			print(errorIndication)
+		else:
+			if errorStatus:
+				print('%s at %s' % (errorStatus.prettyPrint(),errorIndex
+				and varBindTable[-1][int(errorIndex)-1] or '?'))"""
+
+
 	def snmpGet(self, address, oid):
 		errorIndication, errorStatus, errorIndex, varBinds = self.cmdGen.getCmd(
 			cmdgen.CommunityData(self.communityStr),
@@ -42,6 +57,7 @@ class Crawler:
 
 		# Check for errors and print out results
 		if errorIndication:
+			#self.getError(errorIndication, errorStatus, errorIndex)
 			print(errorIndication)
 		elif errorStatus:
 			print(errorStatus)
@@ -73,6 +89,7 @@ class Crawler:
 		print ('getHostName')
 
 		varBinds = self.snmpGet(address, self.oid.hostName)
+#		varBinds = self.snmpGet(address, '1.1.1.1.1.1.1.1.1.1.1.1.1.1')
 
 		for name, val in varBinds:
 			print(val.prettyPrint())
@@ -116,7 +133,7 @@ class Crawler:
 		print('getVLANs')
 		replies = []
 
-		varBindTable = self.snmpWalk(self.address, '.1.3.6.1.4.1.9.9.46.1.3.1.1.2')
+		varBindTable = self.snmpWalk(self.address, oid.vlans)
 
 		for varBindTableRow in varBindTable:
 			for name, val in varBindTableRow:
