@@ -126,6 +126,7 @@ class Crawler:
 
 		for name, val in result:
 			print('mac address: ' + val.prettyPrint())
+			print(str(val))
 #			host.mac = 
 
 
