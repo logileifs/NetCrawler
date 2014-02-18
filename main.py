@@ -13,8 +13,8 @@ def main():
 
 	print 'Number of arguments:', len(sys.argv), 'arguments'
 	
-	address, port = parseInput(sys.argv)
-	crawler = netcrawler.Crawler(port, address)
+	address, port, community = parseInput(sys.argv)
+	crawler = netcrawler.Crawler(port, address, community)
 
 	print('Address is ' + str(crawler.address) + ' Port is ' + str(crawler.port))
 
@@ -45,6 +45,8 @@ def parseInput(args):
 		if(arg[0:8] == 'address='):
 			foundAddress = True
 			address = str(arg[8:])
+		if(arg[0:2] == 'c='):
+			community = str(arg[2:])
 
 	if(not foundAddress):
 		exit('Must provide an address')
@@ -52,7 +54,7 @@ def parseInput(args):
 		port = 161
 		print('No port argument found, using default port 161')
 
-	return address, port
+	return address, port, community
 
 
 def exit(why):
