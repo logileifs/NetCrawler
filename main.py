@@ -20,9 +20,28 @@ def main():
 
 	if crawler.checkEntryPoint(crawler.address):
 		print('entry point answers snmp CDP requests')
+	
+	crawler.printHosts()
+	
 	numberOfNeighbors = crawler.getNeighbors(crawler.hosts[0])	# get numbers of first host
+	
+	crawler.printHosts()
+	
+	crawler.hosts[1].name = crawler.getHostName(crawler.hosts[1].ip)
 	numberOfNeighbors = crawler.getNeighbors(crawler.hosts[1])
+	
+	crawler.printHosts()
+	
+	crawler.hosts[2].name = crawler.getHostName(crawler.hosts[2].ip)
 	numberOfNeighbors = crawler.getNeighbors(crawler.hosts[2])
+
+	crawler.printHosts()
+
+#	crawler.hosts[3].name = crawler.getHostName(crawler.hosts[3].ip)
+#	numberOfNeighbors = crawler.getNeighbors(crawler.hosts[3])
+
+#	crawler.printHosts()
+
 	"""if numberOfNeighbors > 0:
 		print('found ' + str(numberOfNeighbors) + ' neighbors')
 
