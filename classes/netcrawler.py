@@ -30,16 +30,19 @@ class Crawler:
 		return False
 
 
-	""" GEYMA
 	def getError(self, indication, status, index):
-		print('GET ERROR')
+		print('SNMPGET ERROR')
+
+		# Check for errors and print out results
 		if indication:
 			print(indication)
 		elif status:
 			print(status)
 
 
-	def walkError(self, errorIndication, errorStatus, errorIndex):
+	"""def walkError(self, errorIndication, errorStatus, errorIndex):
+		print('SNMPWALK ERROR')
+
 		if errorIndication:
 			print(errorIndication)
 		else:
@@ -56,12 +59,9 @@ class Crawler:
 			lookupNames=True, lookupValues=True
 		)
 
-		# Check for errors and print out results
-		if errorIndication:
-			#self.getError(errorIndication, errorStatus, errorIndex)	# GEYMA
-			print(errorIndication)
-		elif errorStatus:
-			print(errorStatus)
+		# Check for errors
+		if errorIndication or errorStatus:
+			self.getError(errorIndication, errorStatus, errorIndex)
 		else:
 			return varBinds
 
@@ -99,6 +99,34 @@ class Crawler:
 		#host.name = hostName
 
 		return hostName
+
+
+	def getInterface(self, host):
+		print('interface for host ' + host.name)
+
+		ipFound = ''
+		result = self.snmpWalk(host.ip, self.oid.interface)
+
+		for varBindTableRow in result:
+			for name, val in varBindTableRow:
+				if(str(name).find(self.oid.interface + '.') != -1):
+					ipFound = str(name)[21:]
+					if ipFound == host.ip:
+						print('interface of host is: ' + str(val))
+						host.interface = int(val)
+					print(ipFound)
+					print(name.prettyPrint())
+
+#				print('%s = %s' % (name.prettyPrint(), val.prettyPrint()))
+
+
+	def getMAC(self, host):
+
+		result = self.snmpGet(host.ip, self.oid.mac + '.' + str(host.interface))
+
+		for name, val in result:
+			print('mac address: ' + val.prettyPrint())
+#			host.mac = 
 
 
 	def getNeighbors(self, host):
@@ -145,6 +173,7 @@ class Crawler:
 			print('visited: ' + str(host.visited))
 			print('ip: ' + host.ip)
 			print('mac: ' + host.mac)
+			print('interface: ' + str(host.interface))
 
 
 	def getVLANs(self):
