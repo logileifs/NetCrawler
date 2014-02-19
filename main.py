@@ -18,16 +18,27 @@ def main():
 
 	print('Address is ' + str(crawler.address) + ' Port is ' + str(crawler.port))
 
-	if crawler.checkEntryPoint(crawler.address):
-		print('entry point answers snmp CDP requests')
+#	if crawler.checkEntryPoint(crawler.address):
+#		print('entry point answers snmp CDP requests')
 	
 	crawler.printHosts()
-	
-	numberOfNeighbors = crawler.getNeighbors(crawler.hosts[0])	# get numbers of first host
-	crawler.getInterface(crawler.hosts[0])
-	crawler.getMAC(crawler.hosts[0])
+
+	for host in crawler.hosts:
+		if not host.visited:
+			crawler.getInfo(host)
+			crawler.printHosts()
+
+	"""
+	crawler.getInfo(crawler.hosts[0])
 	crawler.printHosts()
-	
+
+	crawler.getInfo(crawler.hosts[1])
+	crawler.printHosts()
+
+	crawler.getInfo(crawler.hosts[2])
+	crawler.printHosts()
+	"""
+
 	"""
 	crawler.hosts[1].name = crawler.getHostName(crawler.hosts[1].ip)
 	numberOfNeighbors = crawler.getNeighbors(crawler.hosts[1])

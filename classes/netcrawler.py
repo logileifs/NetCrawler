@@ -14,9 +14,12 @@ class Crawler:
 		self.cmdGen = cmdgen.CommandGenerator()
 		self.vlans = []
 		self.hosts = []
-
 		self.oid = OID()
 		self.debugMode= args[3]
+
+		host = Host()
+		host.ip = self.address
+		self.hosts.append(host)
 
 
 	def checkEntryPoint(self, address):
@@ -83,15 +86,27 @@ class Crawler:
 					errorIndex and varBindTable[-1][int(errorIndex)-1] or '?'
 					)
 				)
-			else:		
+			else:
 				return varBindTable
 
 
-	def getHostName(self, address):
+	def getInfo(self, host):
+		print('Getting info for ' + host.ip)
+
+		host.name = self.getHostName(host)
+
+		host.interface = self.getInterface(host)
+
+		host.mac = self.getMAC(host)
+
+		self.getNeighbors(host)
+
+
+	def getHostName(self, host):
 		#print ('getHostName')
 		hostName = ''
 
-		varBinds = self.snmpGet(address, self.oid.hostName)
+		varBinds = self.snmpGet(host.ip, self.oid.hostName)
 
 		for name, val in varBinds:
 			hostName = str(val)
@@ -103,9 +118,11 @@ class Crawler:
 
 
 	def getInterface(self, host):
-		print('interface for host ' + host.name)
+#		print('interface for host ' + host.name)
 
 		ipFound = ''
+		interface = ''
+
 		result = self.snmpWalk(host.ip, self.oid.interface)
 
 		for varBindTableRow in result:
@@ -113,26 +130,33 @@ class Crawler:
 				if(str(name).find(self.oid.interface + '.') != -1):
 					ipFound = str(name)[21:]
 					if ipFound == host.ip:
-						print('interface of host is: ' + str(val))
-						host.interface = int(val)
-					print(ipFound)
-					print(name.prettyPrint())
+#						print('interface of host is: ' + str(val))
+						interface = int(val)
+						#host.interface = int(val)
+#					print(ipFound)
+#					print(name.prettyPrint())
+
+		return interface
 
 #				print('%s = %s' % (name.prettyPrint(), val.prettyPrint()))
 
 
 	def getMAC(self, host):
+		mac = ''
+
 		result = self.snmpGet(host.ip, self.oid.mac + '.' + str(host.interface))
 
 		for name, val in result:
-			print('mac address: ' + val.prettyPrint())
+			mac = host.hexToString(val)
+#			print('mac address: ' + val.prettyPrint())
 
 			#print(str(val))
-			host.mac = host.hexToString(val)
+			#host.mac = host.hexToString(val)
+		return mac
 
 
 	def getNeighbors(self, host):
-		print('getNeighbors for ' + str(host.ip))
+#		print('getNeighbors for ' + str(host.ip))
 		numOfNeighbors = 0
 		host.visited = True
 		exists = False
@@ -166,7 +190,7 @@ class Crawler:
 				host.ip = host.hexToOct(host.ip)
 			#print str(host.ip)
 
-		return numOfNeighbors
+		#return numOfNeighbors
 
 
 	def printHosts(self):
