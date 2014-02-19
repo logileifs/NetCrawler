@@ -11,27 +11,16 @@ class Crawler:
 		self.port = args[0]
 		self.address = args[1]					# starting point
 		self.communityStr = args[2]
-		self.cmdGen = cmdgen.CommandGenerator()
-		self.vlans = []
-		self.hosts = []
-		self.oid = OID()
 		self.debugMode= args[3]
+		self.cmdGen = cmdgen.CommandGenerator()
+		self.hosts = []
+		self.vlans = []
+		self.oid = OID()
+		self.network = {}
 
 		host = Host()
 		host.ip = self.address
 		self.hosts.append(host)
-
-
-	def checkEntryPoint(self, address):
-		host = Host()
-#		host.ip = address
-		host.name = self.getHostName(address)
-		if(len(host.name)):
-			host.ip = address
-			self.hosts.append(host)
-			return True
-
-		return False
 
 
 	def getError(self, indication, status, index):
@@ -44,7 +33,7 @@ class Crawler:
 			print(status)
 
 
-	"""def walkError(self, errorIndication, errorStatus, errorIndex):
+	def walkError(self, errorIndication, errorStatus, errorIndex):
 		print('SNMPWALK ERROR')
 
 		if errorIndication:
@@ -52,7 +41,7 @@ class Crawler:
 		else:
 			if errorStatus:
 				print('%s at %s' % (errorStatus.prettyPrint(),errorIndex
-				and varBindTable[-1][int(errorIndex)-1] or '?'))"""
+				and varBindTable[-1][int(errorIndex)-1] or '?'))
 
 
 	def snmpGet(self, address, oid):
@@ -77,17 +66,11 @@ class Crawler:
 			oid
 		)
 
-		if errorIndication:
-			print(errorIndication)
+		# Check for errors
+		if errorIndication or errorStatus:
+			self.walkError(errorIndication, errorStatus, errorIndex)
 		else:
-			if errorStatus:
-				print('%s at %s' % (
-					errorStatus.prettyPrint(),
-					errorIndex and varBindTable[-1][int(errorIndex)-1] or '?'
-					)
-				)
-			else:
-				return varBindTable
+			return varBindTable
 
 
 	def getInfo(self, host):
@@ -99,7 +82,17 @@ class Crawler:
 
 		host.mac = self.getMAC(host)
 
-		self.getNeighbors(host)
+		host.neighbors = self.getNeighbors(host)
+
+		self.network[host.mac] = { 'name': host.name, 'ip': host.ip, 'interface': host.interface, 'neighbors': host.neighbors }
+
+		self.dbPrint('network dictionary:')
+		for key, value in self.network.iteritems():
+			print key, value
+#			if key == 'neighbors':
+#				print('key = neighbors')
+			for neighbor in self.network[key]['neighbors']:
+				print neighbor.ip
 
 
 	def getHostName(self, host):
@@ -111,8 +104,6 @@ class Crawler:
 		for name, val in varBinds:
 			hostName = str(val)
 			self.dbPrint(val.prettyPrint())
-
-		#host.name = hostName
 
 		return hostName
 
@@ -138,8 +129,6 @@ class Crawler:
 
 		return interface
 
-#				print('%s = %s' % (name.prettyPrint(), val.prettyPrint()))
-
 
 	def getMAC(self, host):
 		mac = ''
@@ -157,7 +146,7 @@ class Crawler:
 
 	def getNeighbors(self, host):
 		self.dbPrint('getNeighbors for ' + str(host.ip))
-		numOfNeighbors = 0
+		neighbors = []
 		host.visited = True
 		exists = False
 
@@ -168,10 +157,11 @@ class Crawler:
 				if(str(name).find(self.oid.neighbors) != -1):
 					self.dbPrint('FOUND IP ADDRESS')
 					if(len(val) != 0):
-						numOfNeighbors += 1
 						newHost = Host()
 						if(val.__class__.__name__ == 'OctetString'):
 							newHost.ip = newHost.hexToOct(val)
+							self.dbPrint('adding ' + newHost.ip)
+							neighbors.append(newHost)
 #						newHost.ip = val
 						for host in self.hosts:
 							if host.ip == newHost.ip:
@@ -192,6 +182,8 @@ class Crawler:
 
 		#return numOfNeighbors
 
+		return neighbors
+
 
 	def printHosts(self):
 		for counter, host in enumerate(self.hosts):
@@ -200,6 +192,17 @@ class Crawler:
 			print('ip: ' + host.ip)
 			print('mac: ' + host.mac)
 			print('interface: ' + str(host.interface))
+			print('neighbors: ')
+			for neighbor in host.neighbors:
+				print('\t' + str(neighbor.ip))
+
+
+	def printNetwork(self):
+		self.dbPrint('network dictionary:')
+		for key, value in self.network.iteritems():
+			print key, value
+			for neighbor in self.network[key]['neighbors']:
+				print neighbor.ip
 
 
 	def getVLANs(self):
@@ -283,7 +286,7 @@ class Crawler:
 			output = ''
 			for arg in args:
 				output += str(arg)
-		print('## ' + output)
+			print('## ' + output)
 
 
 	
