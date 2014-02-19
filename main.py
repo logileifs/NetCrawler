@@ -26,43 +26,8 @@ def main():
 	for host in crawler.hosts:
 		if not host.visited:
 			crawler.getInfo(host)
-			crawler.printHosts()
-
-	"""
-	crawler.getInfo(crawler.hosts[0])
-	crawler.printHosts()
-
-	crawler.getInfo(crawler.hosts[1])
-	crawler.printHosts()
-
-	crawler.getInfo(crawler.hosts[2])
-	crawler.printHosts()
-	"""
-
-	"""
-	crawler.hosts[1].name = crawler.getHostName(crawler.hosts[1].ip)
-	numberOfNeighbors = crawler.getNeighbors(crawler.hosts[1])
-	
-	crawler.printHosts()
-	
-	crawler.hosts[2].name = crawler.getHostName(crawler.hosts[2].ip)
-	numberOfNeighbors = crawler.getNeighbors(crawler.hosts[2])
 
 	crawler.printHosts()
-	"""
-
-#	crawler.hosts[3].name = crawler.getHostName(crawler.hosts[3].ip)
-#	numberOfNeighbors = crawler.getNeighbors(crawler.hosts[3])
-
-#	crawler.printHosts()
-
-	"""if numberOfNeighbors > 0:
-		print('found ' + str(numberOfNeighbors) + ' neighbors')
-
-	for host in crawler.hosts:
-		if not host.visited:
-			numberOfNeighbors = crawler.getNeighbors(host.ip)
-			host.visited = True"""
 
 
 def parseInput(args):
