@@ -16,6 +16,7 @@ class Crawler:
 		self.hosts = []
 
 		self.oid = OID()
+		self.debugMode= args[3]
 
 
 	def checkEntryPoint(self, address):
@@ -251,3 +252,8 @@ class Crawler:
 							host.ip = ip
 						if (val == host.mac):
 							print('mac address ' + str(host.mac.prettyPrint()) + ' has ip: ' + ip)
+
+
+	def dbPrint(self, string):
+		if(debugMode):
+			print(string)
