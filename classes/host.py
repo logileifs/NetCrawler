@@ -3,12 +3,13 @@ class Host:
 
 	def __init__(self):
 		"""Constructor"""
-		self.mac = ''
-		self.ip = ''
-		self.port = 0
-		self.name = ''
-		self.visited = False
-		self.interface = 0
+		self.mac = ''			# MAC address
+		self.ip = ''			# IP address
+		self.port = 0			# 
+		self.name = ''			# hostname
+		self.visited = False	# has this host been checked or not
+		self.interface = 0		# current interface host is listening on
+		self.neighbors = []		# hosts connected to this host
 
 
 	def hexToOct(self, hexNum):
@@ -25,6 +26,6 @@ class Host:
 		numbers = ''
 		
 		for num in numList:
-			numbers = numbers + str(hex(int(num))[2:].zfill(2))
+			numbers += str(hex(int(num))[2:].zfill(2))
 		
 		return numbers
