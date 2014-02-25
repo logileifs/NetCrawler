@@ -6,6 +6,7 @@ class Host:
 		self.mac = ''			# MAC address
 		self.ip = ''			# IP address
 		self.port = 0			# 
+		self.type = ''
 		self.name = ''			# hostname
 		self.visited = False	# has this host been checked or not
 		self.interface = 0		# current interface host is listening on
