@@ -18,9 +18,7 @@ def main():
 
 	print('Address is ' + str(crawler.address) + ' Port is ' + str(crawler.port))
 
-#	if crawler.checkEntryPoint(crawler.address):
-#		print('entry point answers snmp CDP requests')
-	
+
 	crawler.printHosts()
 
 	for host in crawler.hosts:
