@@ -16,7 +16,9 @@ class Crawler:
 		self.hosts = []
 		self.vlans = []
 		self.oid = OID()
+
 		self.network = {}
+		self.subnets = {}
 
 		host = Host()
 		host.ip = self.address
@@ -83,6 +85,8 @@ class Crawler:
 		host.mac = self.getMAC(host)
 
 		host.neighbors = self.getNeighbors(host)
+
+		self.getVLANs(host)
 
 		self.network[host.mac] = { 'name': host.name, 'ip': host.ip, 'interface': host.interface, 'neighbors': host.neighbors }
 
@@ -205,20 +209,31 @@ class Crawler:
 				print neighbor.ip
 
 
-	def getVLANs(self):
+	def getVLANs(self, host):
 		self.dbPrint('getVLANs')
 		replies = []
 
-		varBindTable = self.snmpWalk(self.address, oid.vlans)
+		varBindTable = self.snmpWalk(host.ip, self.oid.vlans)
 
 		for varBindTableRow in varBindTable:
 			for name, val in varBindTableRow:
-				replies.append(name)
+				#print('%s = %s' % (name.prettyPrint(), val.prettyPrint()))
+				
+				if int(val) == 1:
+					replies.append(name)
+					#print('vlan ' + str(name) + ' is operational')
 
 		for reply in replies:
 			vlan = VLAN()
 			vlan.number = int(str(reply).split('.')[-1])
-			self.vlans.append(vlan)
+	
+			if vlan.number not in self.subnets:
+				self.subnets[str(vlan.number)] = { 'hosts': [] }
+#			print(vlan.number)
+			#self.vlans.append(vlan)
+
+		print('subnets:')
+		print(self.subnets)
 
 
 	def getMACsOnVLAN(self, vlan):
