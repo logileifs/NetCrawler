@@ -1,7 +1,12 @@
 from pysnmp.entity.rfc3413.oneliner import cmdgen
+from pingsweep import PingSweep
 from vlan import VLAN
 from host import Host
 from oid import OID
+import ipcalc
+import socket
+import ping
+import sys
 
 class Crawler:
 	"""This is the main class"""
@@ -10,6 +15,34 @@ class Crawler:
 		"""Crawler constructor, takes port and address as arguments"""
 		self.port = args[0]
 		self.address = args[1]					# starting point
+		self.range = []
+
+		net = ipcalc.Network(self.address)
+		print('size of network: ' + str(net.size()))
+		print('broadcast address: ' + str(net.broadcast()))
+
+		#for ip in ipcalc.Network(self.address):
+			#self.range.append(str(ip))
+
+		#print('first host: ' + str(net.host_first()))
+		#print('last host: ' + str(net.host_last()))
+		#print('size of range: ' + str(len(self.range)))
+
+		pingsweep = PingSweep(net)
+		self.range = pingsweep.sweep()
+		self.hostList = []
+
+		print('crawler address range:')
+		for ip in self.range:
+			host = Host()
+			host.ip = ip
+			self.hostList.append(host)
+			#print(ip)
+
+		print('alive hosts:')
+		for host in self.hostList:
+			print(host.ip)
+
 		self.communityStr = args[2]
 		self.debugMode= args[3]
 		self.cmdGen = cmdgen.CommandGenerator()
@@ -86,7 +119,7 @@ class Crawler:
 
 		host.neighbors = self.getNeighbors(host)
 
-		self.getVLANs(host)
+		#self.getVLANs(host)
 
 		self.network[host.mac] = { 'name': host.name, 'ip': host.ip, 'interface': host.interface, 'neighbors': host.neighbors }
 
@@ -105,6 +138,9 @@ class Crawler:
 
 		varBinds = self.snmpGet(host.ip, self.oid.hostName)
 
+		if varBinds is None:
+			return ''
+
 		for name, val in varBinds:
 			hostName = str(val)
 			self.dbPrint(val.prettyPrint())
@@ -119,6 +155,9 @@ class Crawler:
 		interface = ''
 
 		result = self.snmpWalk(host.ip, self.oid.interface)
+
+		if result is None:	# catch error
+			return 0
 
 		for varBindTableRow in result:
 			for name, val in varBindTableRow:
@@ -139,6 +178,9 @@ class Crawler:
 
 		result = self.snmpGet(host.ip, self.oid.mac + '.' + str(host.interface))
 
+		if result is None:	# catch error
+			return ''
+
 		for name, val in result:
 			mac = host.hexToString(val)
 			self.dbPrint('mac address: ', val.prettyPrint())
@@ -156,6 +198,9 @@ class Crawler:
 
 		varBindTable = self.snmpWalk(host.ip, self.oid.neighbors)
 
+		if varBindTable is None:	# catch error
+			return []
+
 		for varBindTableRow in varBindTable:
 			for name, val in varBindTableRow:
 				if(str(name).find(self.oid.neighbors) != -1):
@@ -164,19 +209,22 @@ class Crawler:
 						newHost = Host()
 						if(val.__class__.__name__ == 'OctetString'):
 							newHost.ip = newHost.hexToOct(val)
+							newHost.mac = self.getMACofIP(host, newHost)
 							self.dbPrint('adding ' + newHost.ip)
 							neighbors.append(newHost)
-#						newHost.ip = val
-						for host in self.hosts:
-							if host.ip == newHost.ip:
+#						for host in self.hosts:
+						for someHost in self.hostList:
+							if someHost.ip == newHost.ip:
 								exists = True
 
 						if not exists:
-							self.hosts.append(newHost)
+#							self.hosts.append(newHost)
+							self.hostList.append(newHost)
 				#print('%s = %s' % (name.prettyPrint(), val.prettyPrint()))
 
 		self.dbPrint('NEIGHBORS FOUND:')
-		for counter, host in enumerate(self.hosts):
+#		for counter, host in enumerate(self.hosts):
+		for counter, host in enumerate(self.hostList):
 			if(counter == 0):
 				self.dbPrint(host.ip)
 				continue
@@ -189,8 +237,27 @@ class Crawler:
 		return neighbors
 
 
+#	def getMACofIP(self, address, interface, ip):
+	def getMACofIP(self, host, newHost):
+		self.dbPrint('getting mac for ' + str(newHost.ip) + ' from ' + str(host.ip))
+		self.dbPrint('interface: ' + str(host.interface))
+								#ipNetToMediaPhysAddress	#interface
+		result = self.snmpGet(host.ip, '1.3.6.1.2.1.4.22.1.2' + '.' + str(host.interface) + '.' + str(newHost.ip))
+
+		if result is None:
+			return ''
+
+		for name, val in result:
+			self.dbPrint('converting mac: ' + val.prettyPrint())
+			mac = newHost.hexToString(val)
+
+		print('mac of neighbor ' + str(newHost.ip) + ' is ' + mac)
+
+		return mac
+
+
 	def printHosts(self):
-		for counter, host in enumerate(self.hosts):
+		for counter, host in enumerate(self.hostList):
 			print('\nHost ' + str(counter) + ': ' + host.name)
 			print('visited: ' + str(host.visited))
 			print('ip: ' + host.ip)
@@ -198,7 +265,7 @@ class Crawler:
 			print('interface: ' + str(host.interface))
 			print('neighbors: ')
 			for neighbor in host.neighbors:
-				print('\t' + str(neighbor.ip))
+				print('\t' + str(neighbor.mac))
 
 
 	def printNetwork(self):
@@ -294,6 +361,19 @@ class Crawler:
 							host.ip = ip
 						if (val == host.mac):
 							print('mac address ' + str(host.mac.prettyPrint()) + ' has ip: ' + ip)
+
+
+	def pinger( job_q, results_q ):
+		DEVNULL = open(os.devnull,'w')
+		while True:
+			ip = job_q.get()
+			if ip is None: break
+
+			try:
+				subprocess.check_call(['ping','-c1',ip], stdout=DEVNULL)
+				results_q.put(ip)
+			except:
+				pass
 
 
 	def dbPrint(self, *args):

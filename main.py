@@ -22,7 +22,7 @@ def main():
 
 	crawler.printHosts()
 
-	for host in crawler.hosts:
+	for host in crawler.hostList:
 		if not host.visited:
 			crawler.getInfo(host)
 
