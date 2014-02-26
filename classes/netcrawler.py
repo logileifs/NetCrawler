@@ -5,7 +5,7 @@ from host import Host
 from oid import OID
 import ipcalc
 import socket
-import ping
+#import ping
 import sys
 
 class Crawler:
@@ -119,6 +119,8 @@ class Crawler:
 
 		host.neighbors = self.getNeighbors(host)
 
+		self.getType(host)
+
 		#self.getVLANs(host)
 
 		self.network[host.mac] = { 'name': host.name, 'ip': host.ip, 'interface': host.interface, 'neighbors': host.neighbors }
@@ -188,6 +190,19 @@ class Crawler:
 			#print(str(val))
 			#host.mac = host.hexToString(val)
 		return mac
+
+
+	def getType(self, host):
+		print('getType')
+		result = self.snmpGet(host.ip, self.oid.type)
+
+		if result is None:
+			return ''
+
+		for name, val in result:
+			if val == 1:
+				print('device is a router')
+				host.type = 'router'
 
 
 	def getNeighbors(self, host):
@@ -262,6 +277,7 @@ class Crawler:
 			print('visited: ' + str(host.visited))
 			print('ip: ' + host.ip)
 			print('mac: ' + host.mac)
+			print('type: ' + host.type)
 			print('interface: ' + str(host.interface))
 			print('neighbors: ')
 			for neighbor in host.neighbors:
