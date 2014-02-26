@@ -4,7 +4,7 @@
 import os
 import sys
 from classes import netcrawler
-from classes import drawnetwork
+#from classes import drawnetwork
 
 def main():
 	"""
@@ -27,8 +27,8 @@ def main():
 			crawler.getInfo(host)
 
 	crawler.printHosts()
-	drawNet = drawnetwork.DrawNetwork()
-	drawNet.draw(crawler.network)
+#	drawNet = drawnetwork.DrawNetwork()
+#	drawNet.draw(crawler.network)
 
 
 
