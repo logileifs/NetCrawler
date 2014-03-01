@@ -33,11 +33,12 @@ class Crawler:
 		self.hostList = []
 
 		print('crawler address range:')
-		for ip in self.range:
+		for counter, ip in enumerate(self.range):
 			host = Host()
 			host.ip = ip
+			host.id = counter
 			self.hostList.append(host)
-			#print(ip)
+			print(counter)
 
 		print('alive hosts:')
 		for host in self.hostList:
@@ -122,8 +123,10 @@ class Crawler:
 		self.getType(host)
 
 		#self.getVLANs(host)
-
-		self.network[host.mac] = { 'name': host.name, 'ip': host.ip, 'interface': host.interface, 'neighbors': host.neighbors }
+		if(host.id != None):
+			hostName = 'host' + str(host.id)
+			self.dbPrint(hostName)
+			self.network[hostName] = {'mac':host.mac,'name': host.name, 'ip': host.ip, 'interface': host.interface, 'neighbors': host.neighbors }
 
 		self.dbPrint('network dictionary:')
 		for key, value in self.network.iteritems():
@@ -216,6 +219,13 @@ class Crawler:
 				host.type = 'router'
 
 
+	def getHostID(self, hostIP):
+		for host in self.hostList:
+			if hostIP == host.ip:
+				return host.id
+		return None
+
+
 	def getNeighbors(self, host):
 		self.dbPrint('getNeighbors for ' + str(host.ip))
 		neighbors = []
@@ -235,6 +245,7 @@ class Crawler:
 						newHost = Host()
 						if(val.__class__.__name__ == 'OctetString'):
 							newHost.ip = newHost.hexToOct(val)
+							newHost.id = self.getHostID(newHost.ip)
 							newHost.mac = self.getMACofIP(host, newHost)
 							self.dbPrint('adding ' + newHost.ip)
 							neighbors.append(newHost)

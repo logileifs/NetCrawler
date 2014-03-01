@@ -3,6 +3,7 @@ class Host:
 
 	def __init__(self):
 		"""Constructor"""
+		self.id = None
 		self.mac = ''			# MAC address
 		self.ip = ''			# IP address
 		self.port = None			# 
