@@ -153,7 +153,7 @@ class Crawler:
 	def getInterface(self, host):
 		self.dbPrint('interface for host ', host.name)
 
-		ipFound = ''
+		ipFound = False
 		interface = ''
 
 		result = self.snmpWalk(host.ip, self.oid.interface)
@@ -163,19 +163,30 @@ class Crawler:
 
 		for varBindTableRow in result:
 			for name, val in varBindTableRow:
-				if(str(name).find(self.oid.interface + '.') != -1):
-					ipFound = str(name)[21:]
-					if ipFound == host.ip:
-						self.dbPrint('interface of host is: ', str(val))
-						interface = int(val)
-						#host.interface = int(val)
-#					print(ipFound)
-					self.dbPrint(name.prettyPrint())
+
+				ipFound = self.searchStringForIP(name, host)
+				if ipFound:
+					self.dbPrint('interface of host is: ', str(val))
+					interface = int(val)
+				self.dbPrint(name.prettyPrint())
 
 		return interface
 
 
+	def searchStringForIP(self, name, host):
+		"""Search for the host's ip in the snmp response"""
+
+		ipFound = ''
+		if(str(name).find(self.oid.interface + '.') != -1):
+			ipFound = str(name)[21:]
+			if ipFound == host.ip:
+				return True
+
+		return False
+
+
 	def getMAC(self, host):
+		self.dbPrint('get mac for ' + host.ip)
 		mac = ''
 
 		result = self.snmpGet(host.ip, self.oid.mac + '.' + str(host.interface))
@@ -193,7 +204,7 @@ class Crawler:
 
 
 	def getType(self, host):
-		print('getType')
+		self.dbPrint('getType for ' + str(host.ip))
 		result = self.snmpGet(host.ip, self.oid.type)
 
 		if result is None:
