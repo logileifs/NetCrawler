@@ -5,7 +5,7 @@ class Host:
 		"""Constructor"""
 		self.mac = ''			# MAC address
 		self.ip = ''			# IP address
-		self.port = 0			# 
+		self.port = None			# 
 		self.type = ''
 		self.name = ''			# hostname
 		self.visited = False	# has this host been checked or not
