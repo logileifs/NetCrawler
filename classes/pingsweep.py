@@ -1,3 +1,4 @@
+from time import sleep
 import multiprocessing
 import subprocess
 import ipcalc
@@ -19,6 +20,7 @@ class PingSweep:
 			try:
 				subprocess.check_call(['ping','-c1',ip], stdout=DEVNULL)
 				results_q.put(ip)
+				sleep(0.05)
 			except:
 				pass
 
