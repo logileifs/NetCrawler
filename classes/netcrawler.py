@@ -36,7 +36,7 @@ class Crawler:
 		for counter, ip in enumerate(self.range):
 			host = Host()
 			host.ip = ip
-			host.id = counter
+			host.id += str(counter)
 			self.hostList.append(host)
 			print(counter)
 
@@ -123,10 +123,11 @@ class Crawler:
 		self.getType(host)
 
 		#self.getVLANs(host)
-		if(host.id != None):
-			hostName = 'host' + str(host.id)
-			self.dbPrint(hostName)
-			self.network[hostName] = {'mac':host.mac,'name': host.name, 'ip': host.ip, 'interface': host.interface, 'neighbors': host.neighbors }
+#		if(host.id != None):
+			
+#			host.id = 'host'+ str(host.id)
+#		self.dbPrint(hostName)
+		self.network[host.id] = {'mac':host.mac,'name': host.name, 'ip': host.ip, 'interface': host.interface, 'neighbors': host.neighbors }
 
 		self.dbPrint('network dictionary:')
 		for key, value in self.network.iteritems():
@@ -134,7 +135,7 @@ class Crawler:
 #			if key == 'neighbors':
 #				print('key = neighbors')
 			for neighbor in self.network[key]['neighbors']:
-				print neighbor.ip
+				print neighbor
 
 
 	def getHostName(self, host):
@@ -248,15 +249,18 @@ class Crawler:
 							newHost.id = self.getHostID(newHost.ip)
 							newHost.mac = self.getMACofIP(host, newHost)
 							self.dbPrint('adding ' + newHost.ip)
-							neighbors.append(newHost)
+							if(newHost.id != None):
+								neighbors.append(lnewHost.id)
+							else
+								dbPrint('A host in neighbor list is None')
 #						for host in self.hosts:
-						for someHost in self.hostList:
-							if someHost.ip == newHost.ip:
-								exists = True
+#						for someHost in self.hostList:
+#							if someHost.ip == newHost.ip:
+#								exists = True
 
-						if not exists:
+#						if not exists:
 #							self.hosts.append(newHost)
-							self.hostList.append(newHost)
+#							self.hostList.append(newHost)
 				#print('%s = %s' % (name.prettyPrint(), val.prettyPrint()))
 
 		self.dbPrint('NEIGHBORS FOUND:')
@@ -265,8 +269,8 @@ class Crawler:
 			if(counter == 0):
 				self.dbPrint(host.ip)
 				continue
-			if(host.ip.__class__.__name__ == 'OctetString'):
-				host.ip = host.hexToOct(host.ip)
+			#if(host.ip.__class__.__name__ == 'OctetString'):
+				#host.ip = host.hexToOct(host.ip)
 			#print str(host.ip)
 
 		#return numOfNeighbors
@@ -303,7 +307,7 @@ class Crawler:
 			print('interface: ' + str(host.interface))
 			print('neighbors: ')
 			for neighbor in host.neighbors:
-				print('\t' + str(neighbor.mac))
+				print('\t' + str(neighbor))
 
 
 	def printNetwork(self):
@@ -311,7 +315,7 @@ class Crawler:
 		for key, value in self.network.iteritems():
 			print key, value
 			for neighbor in self.network[key]['neighbors']:
-				print neighbor.ip
+				print neighbor
 
 
 	def getVLANs(self, host):
@@ -401,17 +405,11 @@ class Crawler:
 							print('mac address ' + str(host.mac.prettyPrint()) + ' has ip: ' + ip)
 
 
-	def pinger( job_q, results_q ):
-		DEVNULL = open(os.devnull,'w')
-		while True:
-			ip = job_q.get()
-			if ip is None: break
-
-			try:
-				subprocess.check_call(['ping','-c1',ip], stdout=DEVNULL)
-				results_q.put(ip)
-			except:
-				pass
+	def generateXML(self):
+		from dicttoxml import dicttoxml
+		xml = dicttoxml(self.network)
+		with open('network.xml', 'w') as myFile:
+			myFile.write(xml)
 
 
 	def dbPrint(self, *args):

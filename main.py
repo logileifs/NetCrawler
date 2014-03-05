@@ -27,6 +27,9 @@ def main():
 			crawler.getInfo(host)
 
 	crawler.printHosts()
+
+	crawler.generateXML()
+
 	drawNet = drawnetwork.DrawNetwork()
 	drawNet.draw(crawler.network)
 
