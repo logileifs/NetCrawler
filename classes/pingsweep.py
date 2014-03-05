@@ -20,7 +20,6 @@ class PingSweep:
 			try:
 				subprocess.check_call(['ping','-c1',ip], stdout=DEVNULL)
 				results_q.put(ip)
-				sleep(0.05)
 			except:
 				pass
 
@@ -41,6 +40,7 @@ class PingSweep:
 #		for i in range(1,255):
 		for i in self.net:
 #			jobs.put('192.168.60.{0}'.format(i))
+			sleep(0.005)
 			jobs.put(str(i))
 
 		for p in pool:

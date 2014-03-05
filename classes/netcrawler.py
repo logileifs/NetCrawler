@@ -250,9 +250,9 @@ class Crawler:
 							newHost.mac = self.getMACofIP(host, newHost)
 							self.dbPrint('adding ' + newHost.ip)
 							if(newHost.id != None):
-								neighbors.append(lnewHost.id)
-							else
-								dbPrint('A host in neighbor list is None')
+								neighbors.append(newHost.id)
+							else:
+								self.dbPrint('A host in neighbor list is None')
 #						for host in self.hosts:
 #						for someHost in self.hostList:
 #							if someHost.ip == newHost.ip:
