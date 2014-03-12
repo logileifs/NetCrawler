@@ -10,3 +10,6 @@ class OID:
 		self.mac = '1.3.6.1.2.1.2.2.1.6'
 		self.type = '1.3.6.1.2.1.4.1.0'	# 1 = router, 2 = not router
 		#self.sysDescr = '1.3.6.1.2.1.1.1.0'
+		self.numOfPorts = '.1.3.6.1.2.1.17.1.2.0'
+		self.costToRoot = '.1.3.6.1.2.1.17.2.6.0'
+		self.lowestCostPort = '.1.3.6.1.2.1.17.2.7.0'
