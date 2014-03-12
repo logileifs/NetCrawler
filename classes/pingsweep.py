@@ -2,6 +2,7 @@ from time import sleep
 import multiprocessing
 import subprocess
 import ipcalc
+from tqdm import *
 import os
 
 class PingSweep:
@@ -37,21 +38,18 @@ class PingSweep:
 		for p in pool:
 			p.start()
 
-#		for i in range(1,255):
-		for i in self.net:
-#			jobs.put('192.168.60.{0}'.format(i))
+		for i in tqdm(self.net):
 			sleep(0.005)
 			jobs.put(str(i))
 
 		for p in pool:
 			jobs.put(None)
 
-		for p in pool:
+		for p in tqdm(pool):
 			p.join()
 
 		while not results.empty():
 			ip = results.get()
 			addresses.append(ip)
-			#print(ip)
 
 		return addresses
