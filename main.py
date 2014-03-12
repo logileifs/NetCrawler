@@ -20,7 +20,7 @@ def main():
 	print('Address is ' + str(crawler.address) + ' Port is ' + str(crawler.port))
 
 
-	crawler.printHosts()
+#	crawler.printHosts()
 
 	for host in crawler.hostList:
 		if not host.visited:
