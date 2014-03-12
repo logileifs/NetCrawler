@@ -27,14 +27,9 @@ class DrawNetwork:
 		edges = []
 
 		for key, value in network.iteritems():
-				print key, value
-				for neighbor in network[key]['neighbors']:
-					edge = (key, neighbor)
-					edges.append(edge)
-					print neighbor
-
-		for edge in edges:
-			print edge
+			for neighbor in network[key]['neighbors']:
+				edge = (key, neighbor)
+				edges.append(edge)
 
 		return edges
 
