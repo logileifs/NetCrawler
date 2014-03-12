@@ -1,10 +1,12 @@
 from pysnmp.entity.rfc3413.oneliner import cmdgen
 from pingsweep import PingSweep
+from dicttoxml import dicttoxml
 from vlan import VLAN
 from host import Host
 from oid import OID
 import ipcalc
 import socket
+import json
 #import ping
 import sys
 
@@ -406,10 +408,14 @@ class Crawler:
 
 
 	def generateXML(self):
-		from dicttoxml import dicttoxml
 		xml = dicttoxml(self.network)
 		with open('network.xml', 'w') as myFile:
 			myFile.write(xml)
+
+
+	def generateJson(self):
+		with open('network.json', 'w') as myFile:
+			json.dump(self.network, myFile)
 
 
 	def dbPrint(self, *args):
