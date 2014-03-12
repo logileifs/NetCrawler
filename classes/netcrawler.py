@@ -1,8 +1,10 @@
 from pysnmp.entity.rfc3413.oneliner import cmdgen
 from pingsweep import PingSweep
+from dicttoxml import dicttoxml
 from vlan import VLAN
 from host import Host
 from oid import OID
+#import dicttoxml
 import ipcalc
 import socket
 #import ping
@@ -20,13 +22,6 @@ class Crawler:
 		net = ipcalc.Network(self.address)
 		print('size of network: ' + str(net.size()))
 		print('broadcast address: ' + str(net.broadcast()))
-
-		#for ip in ipcalc.Network(self.address):
-			#self.range.append(str(ip))
-
-		#print('first host: ' + str(net.host_first()))
-		#print('last host: ' + str(net.host_last()))
-		#print('size of range: ' + str(len(self.range)))
 
 		pingsweep = PingSweep(net)
 		self.range = pingsweep.sweep()
@@ -131,11 +126,12 @@ class Crawler:
 
 		self.dbPrint('network dictionary:')
 		for key, value in self.network.iteritems():
-			print key, value
+			#print key, value
 #			if key == 'neighbors':
 #				print('key = neighbors')
 			for neighbor in self.network[key]['neighbors']:
-				print neighbor
+				#print neighbor
+				pass
 
 
 	def getHostName(self, host):
@@ -207,17 +203,93 @@ class Crawler:
 		return mac
 
 
-	def getType(self, host):
+	"""def getType(self, host):
 		self.dbPrint('getType for ' + str(host.ip))
+		typeFound = False
+
 		result = self.snmpGet(host.ip, self.oid.type)
 
-		if result is None:
-			return ''
+		if result != None:
+			for name, val in result:
+				if val == 1:
+					print('device is a router')
+					host.type = 'router'
+					typeFound = True
 
-		for name, val in result:
-			if val == 1:
-				print('device is a router')
-				host.type = 'router'
+		if typeFound == False:
+			result = self.snmpGet(host.ip, self.oid.type)"""
+
+
+	def getType(self, host):
+		typeFound = False
+		
+#		typeFound = self.routerCheck(host)
+		if self.routerCheck(host) == False:
+			print(str(host.ip) + ' is not a router')
+			if self.switchCheck(host) == False:
+				print(str(host.ip) + ' is not a switch')
+
+
+
+	def routerCheck(self, host):
+		self.dbPrint('checking if ' + str(host.ip) + ' is a router')
+		print('checking if ' + str(host.ip) + ' is a router')
+
+		result = self.snmpGet(host.ip, self.oid.type)
+
+		if result != None:
+			for name, val in result:
+				print(val.prettyPrint())
+				if int(val) == 1:
+					print('device is a router')
+					host.type = 'router'
+					return True
+				else:
+					return False
+
+		else:
+			print('return false')
+			return False
+
+
+	def switchCheck(self, host):
+		print('checking if ' + str(host.ip) + ' is a switch')
+		numberOfPorts = None
+		costToRoot = None
+		lowestCostPort = None
+
+		result = self.snmpGet(host.ip, self.oid.numOfPorts)
+
+		if result != None:
+			for name, val in result:
+				numberOfPorts = int(val)
+				print('number of ports: ' + str(numberOfPorts))
+
+		else: return False
+
+		result = self.snmpGet(host.ip, self.oid.costToRoot)
+
+		if result != None:
+			for name, val in result:
+				costToRoot = int(val)
+				print('cost to root: ' + str(costToRoot))
+
+		else: return False
+
+		result = self.snmpGet(host.ip, self.oid.lowestCostPort)
+
+		if result != None:
+			for name, val in result:
+				lowestCostPort = int(val)
+				print('lowestCostPort: ' + str(lowestCostPort))
+
+		else: return False
+
+		if numberOfPorts != None and costToRoot != None and lowestCostPort != None:
+			host.type = 'switch'
+			return True
+
+		else: return False
 
 
 	def getHostID(self, hostIP):
@@ -225,6 +297,8 @@ class Crawler:
 			if hostIP == host.ip:
 				return host.id
 		return None
+
+
 
 
 	def getNeighbors(self, host):
@@ -292,7 +366,7 @@ class Crawler:
 			self.dbPrint('converting mac: ' + val.prettyPrint())
 			mac = newHost.hexToString(val)
 
-		print('mac of neighbor ' + str(newHost.ip) + ' is ' + mac)
+		#print('mac of neighbor ' + str(newHost.ip) + ' is ' + mac)
 
 		return mac
 
@@ -406,7 +480,7 @@ class Crawler:
 
 
 	def generateXML(self):
-		from dicttoxml import dicttoxml
+		#from dicttoxml import dicttoxml
 		xml = dicttoxml(self.network)
 		with open('network.xml', 'w') as myFile:
 			myFile.write(xml)
