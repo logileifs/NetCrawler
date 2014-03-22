@@ -17,12 +17,12 @@ class Crawler:
 	oid = OID()
 	pingsweep = PingSweep()
 
-	def __init__(self, *args):
+	def __init__(self, args):
 		"""Crawler constructor, takes port and address as arguments"""
 
-		self.port = args[0]
-		self.subnet = args[1]					# starting point
-		self.community_str = args[2]
+		self.subnet = args[0]					# starting point
+		self.community_str = args[1]
+		self.port = args[2]
 		self.debug_mode = args[3]
 		self.cmd_gen = cmdgen.CommandGenerator()
 		self.host_list = []
@@ -34,9 +34,9 @@ class Crawler:
 
 
 	def initialize(self):
-		self.address_range = self.get_address_range(self.subnet)
-		print('Size of network: ' + str(self.address_range.size()))
-		self.alive_hosts = self.get_alive_hosts(self.address_range)
+		address_range = self.get_address_range(self.subnet)
+		print('Size of network: ' + str(address_range.size()))
+		self.alive_hosts = self.get_alive_hosts(address_range)
 
 		for counter, ip in enumerate(self.alive_hosts):
 			host = Host()
@@ -62,7 +62,6 @@ class Crawler:
 	def get_alive_hosts(self, address_range):
 		"""Execute pingsweep and return all alive hosts"""
 		
-		#pingsweep = PingSweep()
 		alive_hosts = []
 		alive_hosts = self.pingsweep.sweep(address_range)
 
@@ -599,7 +598,8 @@ def parse_input(args):
 		community = 'public'
 		print('Default community set to public')
 
-	return address, port, community, debug_mode
+	arguments = [address, community, port, debug_mode]
+	return arguments
 
 
 def kill(why):
@@ -611,10 +611,8 @@ def kill(why):
 def main():
 	"""Main function to invoke the NetCrawler"""
 
-	print 'Number of arguments:', len(sys.argv), 'arguments'
-	
-	address, port, community, debug_mode = parse_input(sys.argv)
-	crawler = Crawler(port, address, community, debug_mode)
+	arguments = parse_input(sys.argv)
+	crawler = Crawler(arguments)
 
 	#print('Address is ' + str(crawler.address) + ' Port is ' + str(crawler.port))
 
