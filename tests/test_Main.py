@@ -9,7 +9,7 @@ import main
 class MainTests(unittest.TestCase):
 	"""docstring"""
 	
-	def test_parse_input_address(self):
+	"""def test_parse_input_address(self):
 		args = ['', 'a=195.218.195.228', 'p=161', 'c=public', 'd']
 		address, port, community, debugMode = main.parse_input(args)
 		assert address == '195.218.195.228'
@@ -33,4 +33,4 @@ class MainTests(unittest.TestCase):
 		args = []
 		with self.assertRaises(SystemExit) as cm:
 			address, port = main.parse_input(args)
-		self.assertEqual(cm.exception.code, 1)	
+		self.assertEqual(cm.exception.code, 1)"""
