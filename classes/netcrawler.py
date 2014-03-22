@@ -3,59 +3,70 @@ using a classic Caeser shift substitution (3 letter shift)"""
 
 from pysnmp.entity.rfc3413.oneliner import cmdgen
 from pingsweep import PingSweep
+from dicttoxml import dicttoxml
 from vlan import VLAN
 from host import Host
 from oid import OID
-from dicttoxml import dicttoxml
 import ipcalc
-#import socket
 import json
-#import sys
+import sys
 
 class Crawler:
 	"""This is the main class"""
-	#oid = None
+
+	oid = OID()
+	pingsweep = PingSweep()
 
 	def __init__(self, *args):
 		"""Crawler constructor, takes port and address as arguments"""
-		oid = OID()
+
 		self.port = args[0]
-		self.address = args[1]					# starting point
-		self.range = []
-
-		net = ipcalc.Network(self.address)
-		print('Size of network: ' + str(net.size()))
-		#print('broadcast address: ' + str(net.broadcast()))
-
-		pingsweep = PingSweep(net)
-		self.range = pingsweep.sweep()
+		self.subnet = args[1]					# starting point
+		self.community_str = args[2]
+		self.debug_mode = args[3]
+		self.cmd_gen = cmdgen.CommandGenerator()
 		self.host_list = []
+		self.network = {}
+		self.subnets = {}
+		self.range = []
+		self.hosts = []
+		self.vlans = []
 
-		#print('crawler address range:')
-		for counter, ip in enumerate(self.range):
+
+	def initialize(self):
+		self.address_range = self.get_address_range(self.subnet)
+		print('Size of network: ' + str(self.address_range.size()))
+		self.alive_hosts = self.get_alive_hosts(self.address_range)
+
+		for counter, ip in enumerate(self.alive_hosts):
 			host = Host()
 			host.ip = ip
 			host.id += str(counter)
 			self.host_list.append(host)
-			#print(counter)
 
-		print('Alive hosts:')
+
+	def crawl(self):
 		for host in self.host_list:
-			print(host.ip)
+			if not host.visited:
+				self.get_info(host)
 
-		self.community_str = args[2]
-		self.debug_mode = args[3]
-		self.cmd_gen = cmdgen.CommandGenerator()
-		self.hosts = []
-		self.vlans = []
-		self.oid = OID()
 
-		self.network = {}
-		self.subnets = {}
+	def get_address_range(self, subnet):
+		"""Calculate and return subnet range"""
+		
+		address_range = ipcalc.Network(subnet)
 
-		host = Host()
-		host.ip = self.address
-		self.hosts.append(host)
+		return address_range
+
+
+	def get_alive_hosts(self, address_range):
+		"""Execute pingsweep and return all alive hosts"""
+		
+		#pingsweep = PingSweep()
+		alive_hosts = []
+		alive_hosts = self.pingsweep.sweep(address_range)
+
+		return alive_hosts
 
 
 	def get_error(self, indication, status, index, address):
@@ -557,4 +568,68 @@ class Crawler:
 			print('## ' + output)
 
 
+def parse_input(args):
+	"""docstring"""
+	found_port = False
+	found_address = False
+	found_community = False
+	debug_mode = False
+
+	for arg in args:
+		if(arg == args[0]):
+			continue
+		if(arg[0:2] == 'p='):
+			found_port = True
+			port = int(arg[2:])
+		if(arg[0:2] == 'a='):
+			found_address = True
+			address = str(arg[2:])
+		if(arg[0:2] == 'c='):
+			found_community = True
+			community = str(arg[2:])
+		if(arg[0:1] == 'd'):
+			debug_mode = True
+
+	if(not found_address):
+		kill('Must provide an address')
+	if(not found_port):
+		port = 161
+		print('No port argument found, using default port 161')
+	if(not found_community):
+		community = 'public'
+		print('Default community set to public')
+
+	return address, port, community, debug_mode
+
+
+def kill(why):
+	"""Kill the program"""
+	print(why)
+	sys.exit(1)
+
+
+def main():
+	"""Main function to invoke the NetCrawler"""
+
+	print 'Number of arguments:', len(sys.argv), 'arguments'
 	
+	address, port, community, debug_mode = parse_input(sys.argv)
+	crawler = Crawler(port, address, community, debug_mode)
+
+	#print('Address is ' + str(crawler.address) + ' Port is ' + str(crawler.port))
+
+	# first round to see how switches and routers are connected
+	crawler.initialize()
+	crawler.crawl()
+
+	crawler.print_hosts()
+
+	crawler.generate_xml()
+	crawler.generate_json()
+
+	#draw_net = drawnetwork.DrawNetwork()
+	#draw_net.draw(crawler.network)
+
+
+if __name__ == '__main__':
+	main()
