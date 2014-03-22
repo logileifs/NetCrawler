@@ -66,7 +66,7 @@ def parse_input(args):
 
 
 def kill(why):
-	"""docstring"""
+	"""Kill the program"""
 	print(why)
 	sys.exit(1)
 
