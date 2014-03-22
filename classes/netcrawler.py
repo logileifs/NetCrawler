@@ -227,7 +227,7 @@ class Crawler:
 			return ''
 
 		for name, val in result:
-			mac = host.hex_to_string(val)
+			mac = host.hex_to_mac(val)
 			self.db_print('mac address: ', val.prettyPrint())
 
 			#print(str(val))
@@ -341,7 +341,7 @@ class Crawler:
 				#print(name.prettyPrint())
 				#print(val.prettyPrint())
 				new_host = Host()
-				new_host.ip = new_host.hex_to_oct(val)
+				new_host.ip = new_host.hex_to_ip(val)
 				#print('newHost.ip = ' + str(newHost.ip))
 				new_host.id = self.get_host_id((new_host.ip))
 				#print('newHost.id = ' + str(newHost.id))
@@ -371,7 +371,7 @@ class Crawler:
 					if(len(val) != 0):
 						new_host = Host()
 						if(val.__class__.__name__ == 'OctetString'):
-							new_host.ip = new_host.hex_to_oct(val)
+							new_host.ip = new_host.hex_to_ip(val)
 							new_host.id = self.get_host_id(new_host.ip)
 							new_host.mac = self.get_mac_of_ip(host, new_host)
 							self.db_print('adding ' + new_host.ip)
@@ -417,7 +417,7 @@ class Crawler:
 
 		for name, val in result:
 			self.db_print('converting mac: ' + val.prettyPrint())
-			mac = new_host.hex_to_string(val)
+			mac = new_host.hex_to_mac(val)
 
 		#print('mac of neighbor ' + str(newHost.ip) + ' is ' + mac)
 
