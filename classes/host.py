@@ -1,8 +1,10 @@
+"""docstring"""
 class Host:
 	"""PODO class for host"""
 
 	def __init__(self):
 		"""Constructor"""
+		
 		self.id = 'host'
 		self.mac = ''			# MAC address
 		self.ip = ''			# IP address
@@ -14,20 +16,24 @@ class Host:
 		self.neighbors = []		# hosts connected to this host
 
 
-	def hexToOct(self, hexNum):
-		numbers = str(hexNum.asNumbers())
+	def hex_to_oct(self, hex_num):
+		"""docstring"""
+		
+		numbers = str(hex_num.asNumbers())
 		octet = numbers.replace('(', '').replace(')', '').replace(' ', '').replace(',', '.')
 		return octet
 
-	def hexToString(self, hexNum):
-		numbers = str(hexNum.asNumbers())
+	def hex_to_string(self, hex_num):
+		"""docstring"""
+
+		numbers = str(hex_num.asNumbers())
 		numbers = numbers.replace('(', '').replace(')', '').replace(',', '')
-		numList = numbers.split(' ')
+		num_list = numbers.split(' ')
 		
 		del numbers
 		numbers = ''
 		
-		for num in numList:
+		for num in num_list:
 			numbers += str(hex(int(num))[2:].zfill(2))
 		
 		return numbers

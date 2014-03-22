@@ -1,8 +1,11 @@
+"""PingSweep module"""
+
 from time import sleep
 import multiprocessing
+from tqdm import tqdm
 import subprocess
 import ipcalc
-from tqdm import *
+import sys
 import os
 
 class PingSweep:
@@ -13,34 +16,40 @@ class PingSweep:
 	
 
 	def pinger(self, job_q, results_q):
-		DEVNULL = open(os.devnull,'w')
+		"""the pinger job for each thread"""
+
+		devnull = open(os.devnull, 'w')
 		while True:
 			ip = job_q.get()
 			if ip is None: break
 
 			try:
-				subprocess.check_call(['ping','-c1',ip], stdout=DEVNULL)
+				#only works on linux/unix
+				subprocess.check_call(['ping', '-c1', '-w2', ip], stdout=devnull)
 				results_q.put(ip)
 			except:
 				pass
 
 	def sweep(self):
+		"""initialize threads and give each a pinger job"""
+
 		addresses = []
 		pool_size = self.size
-		print('pool size: ' + str(pool_size))
+		#print('pool size: ' + str(pool_size))
 
 		jobs = multiprocessing.Queue()
 		results = multiprocessing.Queue()
 
-		pool = [ multiprocessing.Process(target=self.pinger, args=(jobs,results))
+		pool = [ multiprocessing.Process(target=self.pinger, args=(jobs, results))
 				 for i in range(pool_size) ]
 
 		for p in pool:
 			p.start()
 
-		for i in tqdm(self.net):
-			sleep(0.005)
-			jobs.put(str(i))
+		for ip in tqdm(self.net):
+			sleep(0.020)
+			jobs.put(str(ip))
+			#print(ip)
 
 		for p in pool:
 			jobs.put(None)
@@ -53,3 +62,20 @@ class PingSweep:
 			addresses.append(ip)
 
 		return addresses
+
+
+def main():
+	"""main function"""
+
+	net = ipcalc.Network(sys.argv[1])
+	print('broadcast address: ' + str(net.broadcast()))	
+	pingsweep = PingSweep(net)
+	address_range = []
+	address_range = pingsweep.sweep()
+
+	for address in address_range:
+		print(address)
+
+
+if __name__ == '__main__':
+	main()

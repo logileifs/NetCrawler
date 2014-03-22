@@ -1,48 +1,51 @@
+"""This script prompts a user to enter a message to encode or decode
+using a classic Caeser shift substitution (3 letter shift)"""
+
 from pysnmp.entity.rfc3413.oneliner import cmdgen
 from pingsweep import PingSweep
-from dicttoxml import dicttoxml
 from vlan import VLAN
 from host import Host
 from oid import OID
-#import dicttoxml
+from dicttoxml import dicttoxml
 import ipcalc
-import socket
+#import socket
 import json
-#import ping
-import sys
+#import sys
 
 class Crawler:
 	"""This is the main class"""
+	#oid = None
 
 	def __init__(self, *args):
 		"""Crawler constructor, takes port and address as arguments"""
+		oid = OID()
 		self.port = args[0]
 		self.address = args[1]					# starting point
 		self.range = []
 
 		net = ipcalc.Network(self.address)
-		print('size of network: ' + str(net.size()))
-		print('broadcast address: ' + str(net.broadcast()))
+		print('Size of network: ' + str(net.size()))
+		#print('broadcast address: ' + str(net.broadcast()))
 
 		pingsweep = PingSweep(net)
 		self.range = pingsweep.sweep()
-		self.hostList = []
+		self.host_list = []
 
-		print('crawler address range:')
+		#print('crawler address range:')
 		for counter, ip in enumerate(self.range):
 			host = Host()
 			host.ip = ip
 			host.id += str(counter)
-			self.hostList.append(host)
-			print(counter)
+			self.host_list.append(host)
+			#print(counter)
 
-		print('alive hosts:')
-		for host in self.hostList:
+		print('Alive hosts:')
+		for host in self.host_list:
 			print(host.ip)
 
-		self.communityStr = args[2]
-		self.debugMode= args[3]
-		self.cmdGen = cmdgen.CommandGenerator()
+		self.community_str = args[2]
+		self.debug_mode = args[3]
+		self.cmd_gen = cmdgen.CommandGenerator()
 		self.hosts = []
 		self.vlans = []
 		self.oid = OID()
@@ -55,279 +58,317 @@ class Crawler:
 		self.hosts.append(host)
 
 
-	def getError(self, indication, status, index):
+	def get_error(self, indication, status, index, address):
+		"""docstring"""
+		
 		print('SNMPGET ERROR')
 
 		# Check for errors and print out results
 		if indication:
-			print(indication)
+			print(str(indication) + ' from ' + str(address))
 		elif status:
 			print(status)
 
 
-	def walkError(self, errorIndication, errorStatus, errorIndex):
+	def walk_error(self, indication, status, index, address, var_bind_table):
+		"""docstring"""
+
 		print('SNMPWALK ERROR')
 
-		if errorIndication:
-			print(errorIndication)
+		if indication:
+			print(str(indication) + ' from ' + str(address))
 		else:
-			if errorStatus:
-				print('%s at %s' % (errorStatus.prettyPrint(),errorIndex
-				and varBindTable[-1][int(errorIndex)-1] or '?'))
+			if status:
+				print('%s at %s' % (status.prettyPrint(), index
+				and var_bind_table[-1][int(index)-1] or '?'))
 
 
-	def snmpGet(self, address, oid):
-		errorIndication, errorStatus, errorIndex, varBinds = self.cmdGen.getCmd(
-			cmdgen.CommunityData(self.communityStr),
+	def get(self, address, oid):
+		"""docstring"""
+
+		error_indication, error_status, error_index, var_binds = self.cmd_gen.getCmd(
+			cmdgen.CommunityData(self.community_str),
 			cmdgen.UdpTransportTarget((address, self.port)),
 			cmdgen.MibVariable(oid),
 			lookupNames=True, lookupValues=True
 		)
 
 		# Check for errors
-		if errorIndication or errorStatus:
-			self.getError(errorIndication, errorStatus, errorIndex)
+		if error_indication or error_status:
+			self.get_error(error_indication, error_status, error_index, address)
 		else:
-			return varBinds
+			return var_binds
 
 
-	def snmpWalk(self, address, oid):
-		errorIndication, errorStatus, errorIndex, varBindTable = self.cmdGen.nextCmd(
-			cmdgen.CommunityData(self.communityStr),
+	def walk(self, address, oid):
+		"""docstring"""
+
+		error_indication, error_status, error_index, var_bind_table = self.cmd_gen.nextCmd(
+			cmdgen.CommunityData(self.community_str),
 			cmdgen.UdpTransportTarget((address, self.port)),
 			oid
 		)
 
 		# Check for errors
-		if errorIndication or errorStatus:
-			self.walkError(errorIndication, errorStatus, errorIndex)
+		if error_indication or error_status:
+			self.walk_error(error_indication, error_status, error_index, address, var_bind_table)
 		else:
-			return varBindTable
+			return var_bind_table
 
 
-	def getInfo(self, host):
-		self.dbPrint('Getting info for ', host.ip)
+	def get_info(self, host):
+		"""docstring"""
 
-		host.name = self.getHostName(host)
+		self.db_print('Getting info for ', host.ip)
+		print('\nGetting info for ' + str(host.ip))
 
-		host.interface = self.getInterface(host)
+		host.name = self.get_hostname(host)
 
-		host.mac = self.getMAC(host)
+		host.interface = self.get_interface(host)
 
-		host.neighbors = self.getNeighbors(host)
+		host.mac = self.get_mac(host)
 
-		self.getType(host)
+#		host.neighbors = self.getNeighbors(host)
+		host.neighbors = self.get_neighbors2(host)
+
+		self.get_type(host)
 
 		#self.getVLANs(host)
-#		if(host.id != None):
-			
-#			host.id = 'host'+ str(host.id)
-#		self.dbPrint(hostName)
-		self.network[host.id] = {'mac':host.mac,'name': host.name, 'ip': host.ip, 'interface': host.interface, 'neighbors': host.neighbors }
 
-		self.dbPrint('network dictionary:')
-		for key, value in self.network.iteritems():
-			#print key, value
-#			if key == 'neighbors':
-#				print('key = neighbors')
+		self.network[host.id] = { 'mac': host.mac, 'name': host.name, 'ip': host.ip, 'interface': host.interface, 'neighbors': host.neighbors }
+
+		self.db_print('network dictionary:')
+		
+		"""for key, value in self.network.iteritems():
+			print key, value
+			if key == 'neighbors':
+				print('key = neighbors')
 			for neighbor in self.network[key]['neighbors']:
-				#print neighbor
-				pass
+				print neighbor"""
 
 
-	def getHostName(self, host):
-		self.dbPrint('getHostName')
-		hostName = ''
+	def get_hostname(self, host):
+		"""docstring"""
 
-		varBinds = self.snmpGet(host.ip, self.oid.hostName)
+		self.db_print('getHostName')
+		print('Getting hostname')
+		hostname = ''
 
-		if varBinds is None:
+		var_binds = self.get(host.ip, self.oid.hostname)
+
+		if var_binds is None:
 			return ''
 
-		for name, val in varBinds:
-			hostName = str(val)
-			self.dbPrint(val.prettyPrint())
+		for name, val in var_binds:
+			hostname = str(val)
+			self.db_print(val.prettyPrint())
 
-		return hostName
+		return hostname
 
 
-	def getInterface(self, host):
-		self.dbPrint('interface for host ', host.name)
+	def get_interface(self, host):
+		"""docstring"""
 
-		ipFound = False
+		self.db_print('interface for host ', host.name)
+		print('Getting interface')
+
+		ip_found = False
 		interface = ''
 
-		result = self.snmpWalk(host.ip, self.oid.interface)
+		result = self.walk(host.ip, self.oid.interface)
 
 		if result is None:	# catch error
 			return 0
 
-		for varBindTableRow in result:
-			for name, val in varBindTableRow:
+		for var_bind_table_row in result:
+			for name, val in var_bind_table_row:
 
-				ipFound = self.searchStringForIP(name, host)
-				if ipFound:
-					self.dbPrint('interface of host is: ', str(val))
+				ip_found = self.search_string_for_ip(name, host)
+				if ip_found:
+					self.db_print('interface of host is: ', str(val))
 					interface = int(val)
-				self.dbPrint(name.prettyPrint())
+				self.db_print(name.prettyPrint())
 
 		return interface
 
 
-	def searchStringForIP(self, name, host):
+	def search_string_for_ip(self, name, host):
 		"""Search for the host's ip in the snmp response"""
 
-		ipFound = ''
+		ip_found = ''
 		if(str(name).find(self.oid.interface + '.') != -1):
-			ipFound = str(name)[21:]
-			if ipFound == host.ip:
+			ip_found = str(name)[21:]
+			if ip_found == host.ip:
 				return True
 
 		return False
 
 
-	def getMAC(self, host):
-		self.dbPrint('get mac for ' + host.ip)
+	def get_mac(self, host):
+		"""docstring"""
+
+		self.db_print('get mac for ' + host.ip)
+		print('Getting MAC address')
 		mac = ''
 
-		result = self.snmpGet(host.ip, self.oid.mac + '.' + str(host.interface))
+		result = self.get(host.ip, self.oid.mac + '.' + str(host.interface))
 
 		if result is None:	# catch error
 			return ''
 
 		for name, val in result:
-			mac = host.hexToString(val)
-			self.dbPrint('mac address: ', val.prettyPrint())
+			mac = host.hex_to_string(val)
+			self.db_print('mac address: ', val.prettyPrint())
 
 			#print(str(val))
 			#host.mac = host.hexToString(val)
 		return mac
 
 
-	"""def getType(self, host):
-		self.dbPrint('getType for ' + str(host.ip))
-		typeFound = False
+	def get_type(self, host):
+		"""docstring"""
 
-		result = self.snmpGet(host.ip, self.oid.type)
-
-		if result != None:
-			for name, val in result:
-				if val == 1:
-					print('device is a router')
-					host.type = 'router'
-					typeFound = True
-
-		if typeFound == False:
-			result = self.snmpGet(host.ip, self.oid.type)"""
-
-
-	def getType(self, host):
-		typeFound = False
+		type_found = False
 		
 #		typeFound = self.routerCheck(host)
-		if self.routerCheck(host) == False:
+		if self.router_check(host) == False:
 			print(str(host.ip) + ' is not a router')
-			if self.switchCheck(host) == False:
+			if self.switch_check(host) == False:
 				print(str(host.ip) + ' is not a switch')
+				#add printer check
+				host.type = 'computer'
 
 
+	def router_check(self, host):
+		"""docstring"""
 
-	def routerCheck(self, host):
-		self.dbPrint('checking if ' + str(host.ip) + ' is a router')
-		print('checking if ' + str(host.ip) + ' is a router')
+		self.db_print('checking if ' + str(host.ip) + ' is a router')
+		print('Checking if ' + str(host.ip) + ' is a router')
 
-		result = self.snmpGet(host.ip, self.oid.type)
+		result = self.get(host.ip, self.oid.type)
 
 		if result != None:
 			for name, val in result:
-				print(val.prettyPrint())
+				#print(val.prettyPrint())
 				if int(val) == 1:
-					print('device is a router')
+					print(str(host.ip) + ' is a router')
 					host.type = 'router'
 					return True
 				else:
 					return False
 
 		else:
-			print('return false')
 			return False
 
 
-	def switchCheck(self, host):
-		print('checking if ' + str(host.ip) + ' is a switch')
-		numberOfPorts = None
-		costToRoot = None
-		lowestCostPort = None
+	def switch_check(self, host):
+		"""docstring"""
 
-		result = self.snmpGet(host.ip, self.oid.numOfPorts)
+		print('Checking if ' + str(host.ip) + ' is a switch')
+		number_of_ports = None
+		cost_to_root = None
+		lowest_cost_port = None
 
-		if result != None:
-			for name, val in result:
-				numberOfPorts = int(val)
-				print('number of ports: ' + str(numberOfPorts))
+		#print(oid.numOfPorts)
 
-		else: return False
-
-		result = self.snmpGet(host.ip, self.oid.costToRoot)
+		result = self.get(host.ip, self.oid.num_of_ports)
 
 		if result != None:
 			for name, val in result:
-				costToRoot = int(val)
-				print('cost to root: ' + str(costToRoot))
+				number_of_ports = int(val)
+				print('number of ports: ' + str(number_of_ports))
 
 		else: return False
 
-		result = self.snmpGet(host.ip, self.oid.lowestCostPort)
+		result = self.get(host.ip, self.oid.cost_to_root)
 
 		if result != None:
 			for name, val in result:
-				lowestCostPort = int(val)
-				print('lowestCostPort: ' + str(lowestCostPort))
+				cost_to_root = int(val)
+				print('cost to root: ' + str(cost_to_root))
 
 		else: return False
 
-		if numberOfPorts != None and costToRoot != None and lowestCostPort != None:
+		result = self.get(host.ip, self.oid.lowest_cost_port)
+
+		if result != None:
+			for name, val in result:
+				lowest_cost_port = int(val)
+				print('lowestCostPort: ' + str(lowest_cost_port))
+
+		else: return False
+
+		if number_of_ports != None and cost_to_root != None and lowest_cost_port != None:
 			host.type = 'switch'
 			return True
 
 		else: return False
 
 
-	def getHostID(self, hostIP):
-		for host in self.hostList:
-			if hostIP == host.ip:
+	def get_host_id(self, host_ip):
+		"""docstring"""
+
+		for host in self.host_list:
+			if host_ip == host.ip:
 				return host.id
 		return None
 
 
+	def get_neighbors2(self, host):	#needs more testing
+		"""docstring"""
+
+		print('Getting neighbors')
+		neighbors = []
+		host.visited = True
+
+		results = self.walk(host.ip, self.oid.neighbors2)
+
+		if results is None:
+			return []
+
+		for result in results:
+			for name, val in result:
+				#print(name.prettyPrint())
+				#print(val.prettyPrint())
+				new_host = Host()
+				new_host.ip = new_host.hex_to_oct(val)
+				#print('newHost.ip = ' + str(newHost.ip))
+				new_host.id = self.get_host_id((new_host.ip))
+				#print('newHost.id = ' + str(newHost.id))
+				if new_host.id is not None:
+					neighbors.append(new_host.id)
+
+		return neighbors
 
 
-	def getNeighbors(self, host):
-		self.dbPrint('getNeighbors for ' + str(host.ip))
+	def get_neighbors(self, host):
+		"""docstring"""
+
+		self.db_print('getNeighbors for ' + str(host.ip))
 		neighbors = []
 		host.visited = True
 		exists = False
 
-		varBindTable = self.snmpWalk(host.ip, self.oid.neighbors)
+		var_bind_table = self.walk(host.ip, self.oid.neighbors)
 
-		if varBindTable is None:	# catch error
+		if var_bind_table is None:	# catch error
 			return []
 
-		for varBindTableRow in varBindTable:
-			for name, val in varBindTableRow:
+		for var_bind_table_row in var_bind_table:
+			for name, val in var_bind_table_row:
 				if(str(name).find(self.oid.neighbors) != -1):
-					self.dbPrint('FOUND IP ADDRESS')
+					self.db_print('FOUND IP ADDRESS')
 					if(len(val) != 0):
-						newHost = Host()
+						new_host = Host()
 						if(val.__class__.__name__ == 'OctetString'):
-							newHost.ip = newHost.hexToOct(val)
-							newHost.id = self.getHostID(newHost.ip)
-							newHost.mac = self.getMACofIP(host, newHost)
-							self.dbPrint('adding ' + newHost.ip)
-							if(newHost.id != None):
-								neighbors.append(newHost.id)
+							new_host.ip = new_host.hex_to_oct(val)
+							new_host.id = self.get_host_id(new_host.ip)
+							new_host.mac = self.get_mac_of_ip(host, new_host)
+							self.db_print('adding ' + new_host.ip)
+							if(new_host.id != None):
+								neighbors.append(new_host.id)
 							else:
-								self.dbPrint('A host in neighbor list is None')
+								self.db_print('A host in neighbor list is None')
 #						for host in self.hosts:
 #						for someHost in self.hostList:
 #							if someHost.ip == newHost.ip:
@@ -338,11 +379,11 @@ class Crawler:
 #							self.hostList.append(newHost)
 				#print('%s = %s' % (name.prettyPrint(), val.prettyPrint()))
 
-		self.dbPrint('NEIGHBORS FOUND:')
+		self.db_print('NEIGHBORS FOUND:')
 #		for counter, host in enumerate(self.hosts):
-		for counter, host in enumerate(self.hostList):
+		for counter, host in enumerate(self.host_list):
 			if(counter == 0):
-				self.dbPrint(host.ip)
+				self.db_print(host.ip)
 				continue
 			#if(host.ip.__class__.__name__ == 'OctetString'):
 				#host.ip = host.hexToOct(host.ip)
@@ -353,27 +394,30 @@ class Crawler:
 		return neighbors
 
 
-#	def getMACofIP(self, address, interface, ip):
-	def getMACofIP(self, host, newHost):
-		self.dbPrint('getting mac for ' + str(newHost.ip) + ' from ' + str(host.ip))
-		self.dbPrint('interface: ' + str(host.interface))
+	def get_mac_of_ip(self, host, new_host):
+		"""docstring"""
+
+		self.db_print('getting mac for ' + str(new_host.ip) + ' from ' + str(host.ip))
+		self.db_print('interface: ' + str(host.interface))
 								#ipNetToMediaPhysAddress	#interface
-		result = self.snmpGet(host.ip, '1.3.6.1.2.1.4.22.1.2' + '.' + str(host.interface) + '.' + str(newHost.ip))
+		result = self.get(host.ip, '1.3.6.1.2.1.4.22.1.2' + '.' + str(host.interface) + '.' + str(new_host.ip))
 
 		if result is None:
 			return ''
 
 		for name, val in result:
-			self.dbPrint('converting mac: ' + val.prettyPrint())
-			mac = newHost.hexToString(val)
+			self.db_print('converting mac: ' + val.prettyPrint())
+			mac = new_host.hex_to_string(val)
 
 		#print('mac of neighbor ' + str(newHost.ip) + ' is ' + mac)
 
 		return mac
 
 
-	def printHosts(self):
-		for counter, host in enumerate(self.hostList):
+	def print_hosts(self):
+		"""docstring"""
+
+		for counter, host in enumerate(self.host_list):
 			print('\nHost ' + str(counter) + ': ' + host.name)
 			print('visited: ' + str(host.visited))
 			print('ip: ' + host.ip)
@@ -385,22 +429,26 @@ class Crawler:
 				print('\t' + str(neighbor))
 
 
-	def printNetwork(self):
-		self.dbPrint('network dictionary:')
+	def print_network(self):
+		"""docstring"""
+
+		self.db_print('network dictionary:')
 		for key, value in self.network.iteritems():
 			print key, value
 			for neighbor in self.network[key]['neighbors']:
 				print neighbor
 
 
-	def getVLANs(self, host):
-		self.dbPrint('getVLANs')
+	def get_vlans(self, host):
+		"""docstring"""
+
+		self.db_print('getVLANs')
 		replies = []
 
-		varBindTable = self.snmpWalk(host.ip, self.oid.vlans)
+		var_bind_table = self.walk(host.ip, self.oid.vlans)
 
-		for varBindTableRow in varBindTable:
-			for name, val in varBindTableRow:
+		for var_bind_table_row in var_bind_table:
+			for name, val in var_bind_table_row:
 				#print('%s = %s' % (name.prettyPrint(), val.prettyPrint()))
 				
 				if int(val) == 1:
@@ -420,57 +468,61 @@ class Crawler:
 		print(self.subnets)
 
 
-	def getMACsOnVLAN(self, vlan):
-		self.dbPrint('getMACsOnVLAN ', str(vlan.number))
+	def get_macs_on_vlan(self, vlan):
+		"""docstring"""
 
-		errorIndication, errorStatus, errorIndex, varBindTable = self.cmdGen.nextCmd(
+		self.db_print('getMACsOnVLAN ', str(vlan.number))
+
+		error_indication, error_status, error_index, var_bind_table = self.cmd_gen.nextCmd(
 			cmdgen.CommunityData('menandmice@'+str(vlan.number)),
 			cmdgen.UdpTransportTarget(('192.168.60.254', 161)),
 			'.1.3.6.1.2.1.17.4.3.1.1'
 		)
 
-		if errorIndication:
-			print(errorIndication)
+		if error_indication:
+			print(error_indication)
 		else:
-			if errorStatus:
+			if error_status:
 				print('%s at %s' % (
-					errorStatus.prettyPrint(),
-					errorIndex and varBindTable[-1][int(errorIndex)-1] or '?'
+					error_status.prettyPrint(),
+					error_index and var_bind_table[-1][int(error_index)-1] or '?'
 					)
 				)
 			else:
-				for varBindTableRow in varBindTable:
-					for name, val in varBindTableRow:
+				for var_bind_table_row in var_bind_table:
+					for name, val in var_bind_table_row:
 						print('%s = %s' % (name.prettyPrint(), val.prettyPrint()))
 						host = Host(val)
 						#host.mac = val
 						vlan.hosts.append(host)
 
 		for host in vlan.hosts:
-			self.getIPForHost(vlan, host)
+			self.get_ip_for_host(vlan, host)
 
 
-	def getIPForHost(self, vlan, host):
-		self.dbPrint('getIPForHost ', str(host.mac.prettyPrint()))
+	def get_ip_for_host(self, vlan, host):
+		"""docstring"""
 
-		errorIndication, errorStatus, errorIndex, varBindTable = self.cmdGen.nextCmd(
+		self.db_print('get_IP_For_Host ', str(host.mac.prettyPrint()))
+
+		error_indication, error_status, error_index, var_bind_table = self.cmd_gen.nextCmd(
 			cmdgen.CommunityData('menandmice@'+str(vlan.number)),
 			cmdgen.UdpTransportTarget(('192.168.60.254', 161)),
 			'1.3.6.1.2.1.4.22.1.2.29'
 		)
 
-		if errorIndication:
-			print(errorIndication)
+		if error_indication:
+			print(error_indication)
 		else:
-			if errorStatus:
+			if error_status:
 				print('%s at %s' % (
-					errorStatus.prettyPrint(),
-					errorIndex and varBindTable[-1][int(errorIndex)-1] or '?'
+					error_status.prettyPrint(),
+					error_index and var_bind_table[-1][int(error_index)-1] or '?'
 					)
 				)
 			else:
-				for varBindTableRow in varBindTable:
-					for name, val in varBindTableRow:
+				for var_bind_table_row in var_bind_table:
+					for name, val in var_bind_table_row:
 						print('%s = %s' % (name.prettyPrint(), val.prettyPrint()))
 						reply = str(name)
 						if(reply.find('1.3.6.1.2.1.4.22.1.2.29.') != -1):
@@ -480,19 +532,25 @@ class Crawler:
 							print('mac address ' + str(host.mac.prettyPrint()) + ' has ip: ' + ip)
 
 
-	def generateXML(self):
+	def generate_xml(self):
+		"""docstring"""
+
 		xml = dicttoxml(self.network)
-		with open('network.xml', 'w') as myFile:
-			myFile.write(xml)
+		with open('network.xml', 'w') as my_file:
+			my_file.write(xml)
 
 
-	def generateJson(self):
-		with open('network.json', 'w') as myFile:
-			json.dump(self.network, myFile)
+	def generate_json(self):
+		"""docstring"""
+
+		with open('network.json', 'w') as my_file:
+			json.dump(self.network, my_file)
 
 
-	def dbPrint(self, *args):
-		if(self.debugMode):
+	def db_print(self, *args):
+		"""docstring"""
+
+		if(self.debug_mode):
 			output = ''
 			for arg in args:
 				output += str(arg)

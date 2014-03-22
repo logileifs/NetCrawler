@@ -1,75 +1,72 @@
 #! /usr/bin/env python
 #File main.py
+"""docstring"""
 
-import os
+#import os
 import sys
 from classes import netcrawler
 from classes import drawnetwork
 
 def main():
-	"""
-	This is a test for the CI server
-	Another test for the CI server
-	"""
+	"""Main function to invoke the NetCrawler"""
 
 	print 'Number of arguments:', len(sys.argv), 'arguments'
 	
-	address, port, community, debugMode = parseInput(sys.argv)
-	crawler = netcrawler.Crawler(port, address, community, debugMode)
+	address, port, community, debug_mode = parse_input(sys.argv)
+	crawler = netcrawler.Crawler(port, address, community, debug_mode)
 
-	print('Address is ' + str(crawler.address) + ' Port is ' + str(crawler.port))
+	#print('Address is ' + str(crawler.address) + ' Port is ' + str(crawler.port))
 
-
-#	crawler.printHosts()
-
-	for host in crawler.hostList:
+	# first round to see how switches and routers are connected
+	for host in crawler.host_list:
 		if not host.visited:
-			crawler.getInfo(host)
+			crawler.get_info(host)
 
-	crawler.printHosts()
+	crawler.print_hosts()
 
-	crawler.generateXML()
-	crawler.generateJson()
+	crawler.generate_xml()
+	crawler.generate_json()
 
-	drawNet = drawnetwork.DrawNetwork()
-	drawNet.draw(crawler.network)
+	draw_net = drawnetwork.DrawNetwork()
+	draw_net.draw(crawler.network)
 
 
-
-def parseInput(args):
-	foundPort = False
-	foundAddress = False
-	foundCommunity = False
-	debugMode = False
+def parse_input(args):
+	"""docstring"""
+	found_port = False
+	found_address = False
+	found_community = False
+	debug_mode = False
 
 	for arg in args:
 		if(arg == args[0]):
 			continue
 		if(arg[0:2] == 'p='):
-			foundPort = True
+			found_port = True
 			port = int(arg[2:])
 		if(arg[0:2] == 'a='):
-			foundAddress = True
+			found_address = True
 			address = str(arg[2:])
 		if(arg[0:2] == 'c='):
-			foundCommunity = True
+			found_community = True
 			community = str(arg[2:])
 		if(arg[0:1] == 'd'):
-			debugMode = True
+			debug_mode = True
 
-	if(not foundAddress):
-		exit('Must provide an address')
-	if(not foundPort):
+	if(not found_address):
+		kill('Must provide an address')
+	if(not found_port):
 		port = 161
 		print('No port argument found, using default port 161')
-	if(not foundCommunity):
+	if(not found_community):
 		community = 'public'
 		print('Default community set to public')
 
-	return address, port, community, debugMode
+	return address, port, community, debug_mode
 
 
-def exit(why):
+def kill(why):
+	"""docstring"""
 	print(why)
 	sys.exit(1)
 

@@ -1,3 +1,5 @@
+"""VLAN data class"""
+
 class VLAN:
 	"""PODO class for VLAN"""
 
