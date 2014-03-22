@@ -10,9 +10,9 @@ import os
 
 class PingSweep:
 	"""docstring for PingSweep"""
-	def __init__(self, net):
-		self.net = net
-		self.size = net.size()
+	#def __init__(self, net):
+		#self.net = net
+		#self.size = net.size()
 	
 
 	def pinger(self, job_q, results_q):
@@ -30,11 +30,11 @@ class PingSweep:
 			except:
 				pass
 
-	def sweep(self):
+	def sweep(self, net):
 		"""initialize threads and give each a pinger job"""
 
 		addresses = []
-		pool_size = self.size
+		pool_size = net.size()
 		#print('pool size: ' + str(pool_size))
 
 		jobs = multiprocessing.Queue()
@@ -46,7 +46,7 @@ class PingSweep:
 		for p in pool:
 			p.start()
 
-		for ip in tqdm(self.net):
+		for ip in tqdm(net):
 			sleep(0.020)
 			jobs.put(str(ip))
 			#print(ip)
@@ -69,9 +69,9 @@ def main():
 
 	net = ipcalc.Network(sys.argv[1])
 	print('broadcast address: ' + str(net.broadcast()))	
-	pingsweep = PingSweep(net)
+	pingsweep = PingSweep()
 	address_range = []
-	address_range = pingsweep.sweep()
+	address_range = pingsweep.sweep(net)
 
 	for address in address_range:
 		print(address)
