@@ -1,9 +1,11 @@
 #File test_netcrawler.py
 """Unit testing module for the netcrawler class"""
+
+from classes import netcrawler
+import unittest
+import ipcalc
 #import sys
 #import os
-import unittest
-from classes import netcrawler
 
 class NetCrawlerTests(unittest.TestCase):
 	"""docstring"""
@@ -39,13 +41,19 @@ class NetCrawlerTests(unittest.TestCase):
 		return True
 
 	def correct_arguments(self):
-		#arg0 = self.correct_scriptname()
 		arg0 = self.correct_subnet()
 		arg1 = self.correct_communitystr()
 		arg2 = self.correct_port()
 		arg3 = self.correct_debugmode()
 
 		return arg0, arg1, arg2, arg3
+
+	def correct_address_range(self):
+		subnet = self.correct_subnet()
+		address_range = ipcalc.Network(subnet)
+
+		return address_range
+
 
 	def test_constructor_subnet_argument(self):
 		crawler = netcrawler.Crawler(self.correct_arguments())
@@ -62,3 +70,11 @@ class NetCrawlerTests(unittest.TestCase):
 	def test_constructor_debugmode_argument(self):
 		crawler = netcrawler.Crawler(self.correct_arguments())
 		assert crawler.debug_mode == self.correct_debugmode()
+
+	def test_get_address_range(self):
+		subnet = self.correct_subnet()
+		crawler = netcrawler.Crawler(self.correct_arguments())
+		tuple1 = crawler.get_address_range('192.168.60.254/24').to_tuple()
+		tuple2 = self.correct_address_range().to_tuple()
+		
+		assert tuple1 == tuple2
