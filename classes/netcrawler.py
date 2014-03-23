@@ -46,6 +46,7 @@ class Crawler:
 
 
 	def crawl(self):
+		"""Start crawling the network"""
 		for host in self.host_list:
 			if not host.visited:
 				self.get_info(host)
