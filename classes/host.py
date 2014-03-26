@@ -12,6 +12,10 @@ class Host:
 		self.visited = False	# has this host been checked or not
 		self.interface = 0		# current interface host is listening onll
 		self.neighbors = []		# hosts connected to this host
+		self.if_descr = ''
+		self.ent_table_nr = 0
+		self.vlan_id = ''
+		self.port_list = {}
 
 
 	def hex_to_ip(self, hexNum):
