@@ -34,7 +34,8 @@ class PingSweep:
 		"""initialize threads and give each a pinger job"""
 
 		addresses = []
-		pool_size = net.size()
+		#pool_size = net.size()
+		pool_size = 100
 		#print('pool size: ' + str(pool_size))
 
 		jobs = multiprocessing.Queue()
@@ -47,7 +48,7 @@ class PingSweep:
 			p.start()
 
 		for ip in tqdm(net):
-			sleep(0.020)
+			#sleep(0.020)
 			jobs.put(str(ip))
 			#print(ip)
 
