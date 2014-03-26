@@ -52,7 +52,7 @@ class Crawler:
 
 		for host in self.host_list:
 			for name, val in host.port_list.iteritems():
-				if mac_exists(name):
+				if self.mac_exists(name):
 					print(name + ' exists')
 				else:
 					print(name + ' does not exist')
