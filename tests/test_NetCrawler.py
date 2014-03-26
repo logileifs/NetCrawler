@@ -74,7 +74,13 @@ class NetCrawlerTests(unittest.TestCase):
 	def test_get_address_range(self):
 		subnet = self.correct_subnet()
 		crawler = netcrawler.Crawler(self.correct_arguments())
-		tuple1 = crawler.get_address_range('192.168.60.254/24').to_tuple()
-		tuple2 = self.correct_address_range().to_tuple()
+		crawler_network = crawler.get_address_range('192.168.60.254/24').to_tuple()
+		expected_network = self.correct_address_range().to_tuple()
 		
-		assert tuple1 == tuple2
+		assert crawler_network == expected_network
+
+	def test_dec_to_mac(self):
+		dec_string = '0.10.138.219.57.192'
+		hex_string = '000a8adb39c0'
+		crawler = netcrawler.Crawler(self.correct_arguments())
+		assert crawler.dec_to_mac(dec_string) == hex_string
