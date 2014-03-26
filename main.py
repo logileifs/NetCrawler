@@ -5,15 +5,15 @@
 #import os
 import sys
 from classes import netcrawler
-from classes import drawnetwork
+#from classes import drawnetwork
 
 def main():
 	"""Main function to invoke the NetCrawler"""
 
 	print 'Number of arguments:', len(sys.argv), 'arguments'
 	
-	address, port, community, debug_mode = parse_input(sys.argv)
-	crawler = netcrawler.Crawler(port, address, community, debug_mode)
+	arguments = parse_input(sys.argv)
+	crawler = netcrawler.Crawler(arguments)
 
 	#print('Address is ' + str(crawler.address) + ' Port is ' + str(crawler.port))
 
@@ -27,8 +27,8 @@ def main():
 	crawler.generate_xml()
 	crawler.generate_json()
 
-	draw_net = drawnetwork.DrawNetwork()
-	draw_net.draw(crawler.network)
+	#draw_net = drawnetwork.DrawNetwork()
+	#draw_net.draw(crawler.network)
 
 
 def parse_input(args):
