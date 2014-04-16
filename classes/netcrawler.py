@@ -1,6 +1,6 @@
 """This program crawls a network and maps it"""
 
-from pysnmp.entity.rfc3413.oneliner import cmdgen
+from snmpwrapper import SNMPWrapper
 from pingsweep import PingSweep
 from dicttoxml import dicttoxml
 from vlan import VLAN
@@ -15,37 +15,99 @@ class Crawler:
 
 	oid = OID()
 	pingsweep = PingSweep()
+	snmp = SNMPWrapper()
 
 	def __init__(self, args):
 		"""Crawler constructor, takes port and address as arguments"""
 
-		self.subnet = args[0]					# starting point
+		self.address = args[0]					# starting point
 		self.community_str = args[1]
 		self.port = args[2]
 		self.debug_mode = args[3]
-		self.cmd_gen = cmdgen.CommandGenerator()
+		self.subnet = args[4]
+		Crawler.snmp.community_str = self.community_str
 		self.host_list = []
 		self.network = {}
-		self.subnets = {}
 		self.range = []
-		self.hosts = []
-		self.vlans = []
+		self.known_hosts = []
+		self.host_list = []
+
+		self.subnets = []
+		self.vlans = {}
+		
+		self.host_counter = 0
+
+
+	def get_subnets(self, host):
+		"""Get all subnets the host is aware of"""
+
+		results = Crawler.snmp.walk(host.ip, '1.3.6.1.2.1.4.20.1.3')
+
+		if results is not None:
+			for result in results:
+				for name,val in result:
+					tmp = ''
+					ip = str(name).split('1.3.6.1.2.1.4.20.1.3.', 1)[1]
+
+					for char in str(val):
+						tmp += str(int(char.encode('hex'),16)) + '.'
+						
+					mask = tmp[:-1]
+					del tmp
+					
+					print('IP: ' + ip + ' MASK: ' + str(mask))
+
+					net = ipcalc.Network(ip + '/' + mask)
+					self.subnets.append(net)
+
+
+	def host_exists(self, host):
+
+		for h in self.host_list:
+			if h.ip == host.ip:
+				return True
+				break
+			if h.mac == host.mac:
+				return True
+				break
+			if h.id == host.id:
+				return True
+				break
+
+		return False
+
+
+	def add_host(self, host):
+
+		if not self.host_exists(host):
+			host.id += str(self.host_counter)
+			self.host_list.append(host)
+			self.host_counter += 1
 
 
 	def initialize(self):
-		address_range = self.get_address_range(self.subnet)
-		print('Size of network: ' + str(address_range.size()))
-		self.alive_hosts = self.get_alive_hosts(address_range)
+		if self.subnet:
+			address_range = self.get_address_range(self.subnet)
+			print('Size of network: ' + str(address_range.size()))
+			self.alive_hosts = self.get_alive_hosts(address_range)
 
-		for counter, ip in enumerate(self.alive_hosts):
+			for counter, ip in enumerate(self.alive_hosts):
+				host = Host()
+				host.ip = ip
+				host.id += str(counter)
+				self.host_list.append(host)
+
+		else:
 			host = Host()
-			host.ip = ip
-			host.id += str(counter)
-			self.host_list.append(host)
+			host.ip = self.address
+			self.add_host(host)
+			#host.id += str(self.host_counter)
+			#self.host_list.append(host)
 
 
 	def crawl(self):
 		"""Start crawling the network"""
+
 		for host in self.host_list:
 			if not host.visited:
 				self.get_info(host)
@@ -85,82 +147,8 @@ class Crawler:
 		return alive_hosts
 
 
-	def get_error(self, indication, status, index, address):
-		"""SNMP GET error handler"""
-		
-		print('SNMPGET ERROR')
-
-		if indication:
-			print(str(indication) + ' from ' + str(address))
-		elif status:
-			print(status)
-
-
-	def walk_error(self, indication, status, index, address, var_bind_table):
-		"""SNMP WALK error handler"""
-
-		print('SNMPWALK ERROR')
-
-		if indication:
-			print(str(indication) + ' from ' + str(address))
-		else:
-			if status:
-				print('%s at %s' % (status.prettyPrint(), index
-				and var_bind_table[-1][int(index)-1] or '?'))
-
-
-	def get(self, address, oid):
-		"""docstring"""
-
-		error_indication, error_status, error_index, var_binds = self.cmd_gen.getCmd(
-			cmdgen.CommunityData(self.community_str),
-			cmdgen.UdpTransportTarget((address, self.port)),
-			cmdgen.MibVariable(oid),
-			lookupNames=True, lookupValues=True
-		)
-
-		# Check for errors
-		if error_indication or error_status:
-			self.get_error(error_indication, error_status, error_index, address)
-		else:
-			return var_binds
-
-
-	def walk2(self, address, oid, vlan_id):
-		"""docstring"""
-
-		error_indication, error_status, error_index, var_bind_table = self.cmd_gen.nextCmd(
-			cmdgen.CommunityData(vlan_id),
-			cmdgen.UdpTransportTarget((address, self.port)),
-			oid
-		)
-
-		# Check for errors
-		if error_indication or error_status:
-			self.walk_error(error_indication, error_status, error_index, address, var_bind_table)
-		else:
-			return var_bind_table
-
-
-	def walk(self, address, oid):
-		"""docstring"""
-
-		err_indication, err_status, err_index, var_bind_table = self.cmd_gen.nextCmd(
-			cmdgen.CommunityData(self.community_str),
-			cmdgen.UdpTransportTarget((address, self.port)),
-			oid
-		)
-
-		# Check for errors
-		if err_indication or err_status:
-			self.walk_error(err_indication, err_status,
-							err_index, address, var_bind_table)
-		else:
-			return var_bind_table
-
-
 	def get_info(self, host):
-		"""docstring"""
+		"""Get all relevant information from host"""
 
 		self.db_print('Getting info for ', host.ip)
 		print('\nGetting info for ' + str(host.ip))
@@ -169,9 +157,14 @@ class Crawler:
 
 		host.interface = self.get_interface(host)
 
+		self.get_arp_cache(host)
+		self.get_if_list(host)
+		self.get_ips(host)
+		self.get_subnets(host)
+
 		host.mac = self.get_mac(host)
 
-		host.neighbors = self.get_neighbors2(host)
+		host.neighbors = self.get_neighbors(host)
 		
 		self.get_type(host)
 		
@@ -185,43 +178,47 @@ class Crawler:
 								  'neighbors': host.neighbors }
 
 
+	def get_ips(self, host):
+		"""Get all IP addresses of host"""
+
+		results = Crawler.snmp.walk(host.ip, '1.3.6.1.2.1.4.20.1.2')
+
+		if results is not None:
+			for result in results:
+				for name,val in result:
+					ip = str(name).split('1.3.6.1.2.1.4.20.1.2.',1)[1]
+					interface = str(val)
+					print('ip: ' + ip + ' if: ' + str(val))
+					descr = host.if_table[interface]['descr']
+					mac = host.if_table[interface]['mac']
+					host.if_table[interface]['ips'].append(ip)
+
+
 	def get_port_list(self, host):
 		"""Find where end devices are connected on the network"""
 
 		port_list = {}
-		results = self.walk2(host.ip, '1.3.6.1.2.1.17.4.3.1.2', host.vlan_id)
+		results = Crawler.snmp.walk(host.ip, '1.3.6.1.2.1.17.4.3.1.2', host.vlan_id)
 
 		if results is None:
 			return None
 
 		for result in results:
-			for name, val in result:	
-				host.port_list[self.dec_to_mac(str(name)[23:])] = int(val)
+			for name, val in result:
+				host.port_list[dec_to_mac(str(name)[23:])] = int(val)
 
 		from pprint import pprint
 		pprint(vars(host))
 
 
-	def dec_to_mac(self, dec_string):
-		"""Convert decimal MAC address to hex"""
-
-		hex_string = ''
-		numbers = dec_string.split('.')
-
-		for number in numbers:
-			hex_string += str(hex(int(number))[2:].zfill(2))
-
-		return hex_string
-
-
 	def get_hostname(self, host):
-		"""docstring"""
+		"""Get the name of the host"""
 
 		self.db_print('getHostName')
 		print('Getting hostname')
 		hostname = ''
 
-		var_binds = self.get(host.ip, self.oid.hostname)
+		var_binds = Crawler.snmp.get(host.ip, self.oid.hostname)
 
 		if var_binds is None:
 			return ''
@@ -234,7 +231,7 @@ class Crawler:
 
 
 	def get_interface(self, host):
-		"""docstring"""
+		"""Get the interface of the device"""
 
 		self.db_print('interface for host ', host.name)
 		print('Getting interface')
@@ -242,7 +239,7 @@ class Crawler:
 		ip_found = False
 		interface = ''
 
-		result = self.walk(host.ip, self.oid.interface)
+		result = Crawler.snmp.walk(host.ip, self.oid.interface)
 
 		if result is None:	# catch error
 			return 0
@@ -252,6 +249,7 @@ class Crawler:
 
 				ip_found = self.search_string_for_ip(name, host)
 				if ip_found:
+					print('interface of host is: ' + str(val))
 					self.db_print('interface of host is: ', str(val))
 					interface = int(val)
 				self.db_print(name.prettyPrint())
@@ -264,7 +262,7 @@ class Crawler:
 
 		if_descr = ''
 
-		result = self.get(host.ip, '1.3.6.1.2.1.2.2.1.2.' + str(host.interface))
+		result = Crawler.snmp.get(host.ip, '1.3.6.1.2.1.2.2.1.2.' + str(host.interface))
 
 		if result is None:
 			return ''
@@ -280,7 +278,7 @@ class Crawler:
 
 		ent_table_nr = 0
 
-		results = self.walk(host.ip, '1.3.6.1.2.1.47.1.2.1.1.2')
+		results = Crawler.snmp.walk(host.ip, '1.3.6.1.2.1.47.1.2.1.1.2')
 
 		if results is None:
 			return 0
@@ -298,13 +296,17 @@ class Crawler:
 
 		vlan_id = ''
 
-		result = self.get(host.ip, '1.3.6.1.2.1.47.1.2.1.1.4.' + str(host.ent_table_nr))
+		result = Crawler.snmp.get(host.ip, '1.3.6.1.2.1.47.1.2.1.1.4.' + str(host.ent_table_nr))
 
 		if result is None:
 			return ''
 
 		for name, val in result:
-			vlan_id = str(val)
+			index = str(val).find('@')
+			if index != -1:
+				print('found @ at index ' + str(index))
+				vlan_id = str(val)[index:]
+				print('vlan_id: ' + vlan_id)
 
 		return vlan_id
 
@@ -328,13 +330,13 @@ class Crawler:
 		print('Getting MAC address')
 		mac = ''
 
-		result = self.get(host.ip, self.oid.mac + '.' + str(host.interface))
+		result = Crawler.snmp.get(host.ip, self.oid.mac + '.' + str(host.interface))
 
 		if result is None:	# catch error
 			return ''
 
 		for name, val in result:
-			mac = host.hex_to_mac(val)
+			mac = hex_to_mac(val)
 			self.db_print('mac address: ', val.prettyPrint())
 
 		return mac
@@ -360,7 +362,7 @@ class Crawler:
 		self.db_print('checking if ' + str(host.ip) + ' is a router')
 		print('Checking if ' + str(host.ip) + ' is a router')
 
-		result = self.get(host.ip, self.oid.type)
+		result = Crawler.snmp.get(host.ip, self.oid.type)
 
 		if result != None:
 			for name, val in result:
@@ -386,7 +388,7 @@ class Crawler:
 
 		#print(oid.numOfPorts)
 
-		result = self.get(host.ip, self.oid.num_of_ports)
+		result = Crawler.snmp.get(host.ip, self.oid.num_of_ports)
 
 		if result != None:
 			for name, val in result:
@@ -395,7 +397,7 @@ class Crawler:
 
 		else: return False
 
-		result = self.get(host.ip, self.oid.cost_to_root)
+		result = Crawler.snmp.get(host.ip, self.oid.cost_to_root)
 
 		if result != None:
 			for name, val in result:
@@ -404,7 +406,7 @@ class Crawler:
 
 		else: return False
 
-		result = self.get(host.ip, self.oid.lowest_cost_port)
+		result = Crawler.snmp.get(host.ip, self.oid.lowest_cost_port)
 
 		if result != None:
 			for name, val in result:
@@ -421,7 +423,7 @@ class Crawler:
 
 
 	def get_host_id(self, host_ip):
-		"""docstring"""
+		"""Find id of host in known hosts"""
 
 		for host in self.host_list:
 			if host_ip == host.ip:
@@ -429,14 +431,14 @@ class Crawler:
 		return None
 
 
-	def get_neighbors2(self, host):	#needs more testing
-		"""docstring"""
+	def get_neighbors(self, host):	#needs more testing
+		"""Get list of host neighbors using Cisco Discovery Protocol"""
 
 		print('Getting neighbors')
 		neighbors = []
 		host.visited = True
 
-		results = self.walk(host.ip, self.oid.neighbors2)
+		results = Crawler.snmp.walk(host.ip, self.oid.neighbors2)
 
 		if results is None:
 			return []
@@ -444,7 +446,7 @@ class Crawler:
 		for result in results:
 			for name, val in result:
 				new_host = Host()
-				new_host.ip = new_host.hex_to_ip(val)
+				new_host.ip = hex_to_ip(val)
 				new_host.id = self.get_host_id((new_host.ip))
 				if new_host.id is not None:
 					neighbors.append(new_host.id)
@@ -452,57 +454,59 @@ class Crawler:
 		return neighbors
 
 
-	def get_neighbors(self, host):
-		"""docstring"""
+	def get_arp_cache(self, host):
+		"""Get ARP table from host"""
 
-		self.db_print('getNeighbors for ' + str(host.ip))
-		neighbors = []
-		host.visited = True
-		exists = False
+		results = Crawler.snmp.walk(host.ip, '.1.3.6.1.2.1.4.22.1.2.' + str(host.interface))
 
-		var_bind_table = self.walk(host.ip, self.oid.neighbors)
-
-		if var_bind_table is None:	# catch error
-			return []
-
-		for var_bind_table_row in var_bind_table:
-			for name, val in var_bind_table_row:
-				if(str(name).find(self.oid.neighbors) != -1):
-					self.db_print('FOUND IP ADDRESS')
-					if(len(val) != 0):
+		if results is not None:
+			for result in results:
+				for name, val in result:
+					print(str(name) + ' = ' + hex_to_mac(val))
+					if str(name).find('1.3.6.1.2.1.4.22.1.2.' + str(host.interface)) != -1:
 						new_host = Host()
-						if(val.__class__.__name__ == 'OctetString'):
-							new_host.ip = new_host.hex_to_ip(val)
-							new_host.id = self.get_host_id(new_host.ip)
-							new_host.mac = self.get_mac_of_ip(host, new_host)
-							self.db_print('adding ' + new_host.ip)
-							if(new_host.id != None):
-								neighbors.append(new_host.id)
-							else:
-								self.db_print('A host in neighbor list is None')
-#						for host in self.hosts:
-#						for someHost in self.hostList:
-#							if someHost.ip == newHost.ip:
-#								exists = True
+						new_host.ip = str(name).split('1.3.6.1.2.1.4.22.1.2.' + str(host.interface) + '.',1)[1]
+						#print('new host ip: ' + new_host.ip)
+						new_host.mac = hex_to_mac(val)
+						#print('new host mac: ' + new_host.mac)
 
-#						if not exists:
-#							self.hosts.append(newHost)
-#							self.hostList.append(newHost)
-				#print('%s = %s' % (name.prettyPrint(), val.prettyPrint()))
+						self.add_host(new_host)
 
-		self.db_print('NEIGHBORS FOUND:')
-#		for counter, host in enumerate(self.hosts):
-		for counter, host in enumerate(self.host_list):
-			if(counter == 0):
-				self.db_print(host.ip)
-				continue
-			#if(host.ip.__class__.__name__ == 'OctetString'):
-				#host.ip = host.hexToOct(host.ip)
-			#print str(host.ip)
 
-		#return numOfNeighbors
+	def get_if_list(self, host):
+		"""Get list of host's interfaces"""
 
-		return neighbors
+		results = Crawler.snmp.walk(host.ip, '1.3.6.1.2.1.2.2.1.6')
+
+		if results is not None:
+			for result in results:
+				for name,val in result:
+					interface = str(name).split('1.3.6.1.2.1.2.2.1.6.', 1)[1]
+					mac = hex_to_mac(val)
+					#print('if: ' + interface + ' mac: ' + mac)
+					host.if_table[interface] = { 'mac': mac }
+		
+			del interface
+			del mac
+
+		del results
+		
+		results = Crawler.snmp.walk(host.ip, '1.3.6.1.2.1.2.2.1.2')
+
+		if results is not None:
+			for result in results:
+				for name,val in result:
+					interface = str(name).split('1.3.6.1.2.1.2.2.1.2.', 1)[1]
+					descr = str(val)
+					mac = host.if_table[interface]['mac']
+					#print('MAC:' + mac)
+					#print('if: ' + interface + ' descr: ' + descr)
+					host.if_table[interface] = { 'mac': mac, 'descr': descr, 'ips': [] }
+					#host.if_table.update({ 'mac': mac, 'descr': descr})
+
+		"""self.network[host.id] = { 'mac': host.mac, 'name': host.name,
+								  'ip': host.ip, 'interface': host.interface,
+								  'neighbors': host.neighbors }"""
 
 
 	def get_mac_of_ip(self, host, new_host):
@@ -511,7 +515,7 @@ class Crawler:
 		self.db_print('getting mac for ' + str(new_host.ip) + ' from ' + str(host.ip))
 		self.db_print('interface: ' + str(host.interface))
 								#ipNetToMediaPhysAddress	#interface
-		result = self.get(host.ip, '1.3.6.1.2.1.4.22.1.2' + '.' + str(host.interface) + '.' + str(new_host.ip))
+		result = Crawler.snmp.get(host.ip, '1.3.6.1.2.1.4.22.1.2' + '.' + str(host.interface) + '.' + str(new_host.ip))
 
 		if result is None:
 			return ''
@@ -519,8 +523,6 @@ class Crawler:
 		for name, val in result:
 			self.db_print('converting mac: ' + val.prettyPrint())
 			mac = new_host.hex_to_mac(val)
-
-		#print('mac of neighbor ' + str(newHost.ip) + ' is ' + mac)
 
 		return mac
 
@@ -545,9 +547,9 @@ class Crawler:
 
 		self.db_print('network dictionary:')
 		for key, value in self.network.iteritems():
-			print key, value
+			print(key, value)
 			for neighbor in self.network[key]['neighbors']:
-				print neighbor
+				print(neighbor)
 
 
 	def get_vlans(self, host):
@@ -556,7 +558,7 @@ class Crawler:
 		self.db_print('getVLANs')
 		replies = []
 
-		var_bind_table = self.walk(host.ip, self.oid.vlans)
+		var_bind_table = Crawler.snmp.walk(host.ip, self.oid.vlans)
 
 		for var_bind_table_row in var_bind_table:
 			for name, val in var_bind_table_row:
@@ -570,13 +572,13 @@ class Crawler:
 			vlan = VLAN()
 			vlan.number = int(str(reply).split('.')[-1])
 	
-			if vlan.number not in self.subnets:
-				self.subnets[str(vlan.number)] = { 'hosts': [] }
+			if vlan.number not in self.vlans:
+				self.vlans[str(vlan.number)] = { 'hosts': [] }
 #			print(vlan.number)
 			#self.vlans.append(vlan)
 
-		print('subnets:')
-		print(self.subnets)
+		print('vlans:')
+		print(self.vlans)
 
 
 	def get_macs_on_vlan(self, vlan):
@@ -668,12 +670,50 @@ class Crawler:
 			print('## ' + output)
 
 
+def dec_to_mac(dec_string):
+	"""Convert decimal MAC address to hex"""
+
+	hex_string = ''
+	numbers = dec_string.split('.')
+
+	for number in numbers:
+		hex_string += str(hex(int(number))[2:].zfill(2))
+
+	return hex_string
+
+
+def hex_to_ip(hexNum):
+	numbers = str(hexNum.asNumbers())
+	octet = numbers.replace('(', '').replace(')', '').replace(' ', '').replace(',', '.')
+	return octet
+
+
+def hex_to_mac(hexNum):
+
+	if hexNum == '':
+		return ''
+
+	else:
+		numbers = str(hexNum.asNumbers())
+		numbers = numbers.replace('(', '').replace(')', '').replace(',', '')
+		numList = numbers.split(' ')
+		
+		del numbers
+		numbers = ''
+		
+		for num in numList:
+			numbers += str(hex(int(num))[2:].zfill(2))
+		
+		return numbers
+
+
 def parse_input(args):
 	"""docstring"""
 	found_port = False
 	found_address = False
 	found_community = False
 	debug_mode = False
+	subnet = None
 
 	for arg in args:
 		if(arg == args[0]):
@@ -683,7 +723,12 @@ def parse_input(args):
 			port = int(arg[2:])
 		if(arg[0:2] == 'a='):
 			found_address = True
-			address = str(arg[2:])
+			if str(arg).find('/') != -1:
+				address = str(arg[2:-3])
+				subnet = str(arg[2:])
+			else:
+				address = str(arg[2:])
+			print('address: ' + address)
 		if(arg[0:2] == 'c='):
 			found_community = True
 			community = str(arg[2:])
@@ -699,7 +744,7 @@ def parse_input(args):
 		community = 'public'
 		print('Default community set to public')
 
-	arguments = [address, community, port, debug_mode]
+	arguments = [address, community, port, debug_mode, subnet]
 	return arguments
 
 
@@ -715,9 +760,6 @@ def main():
 	arguments = parse_input(sys.argv)
 	crawler = Crawler(arguments)
 
-	#print('Address is ' + str(crawler.address) + ' Port is ' + str(crawler.port))
-
-	# first round to see how switches and routers are connected
 	crawler.initialize()
 	crawler.crawl()
 
