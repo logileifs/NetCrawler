@@ -79,6 +79,10 @@ class NetCrawlerTests(unittest.TestCase):
 		
 		assert crawler_network == expected_network
 
+	def test_initializer(self):
+		crawler = netcrawler.Crawler(self.correct_arguments())
+		
+
 	def test_dec_to_mac(self):
 		dec_string = '0.10.138.219.57.192'
 		hex_string = '000a8adb39c0'
