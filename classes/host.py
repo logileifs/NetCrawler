@@ -12,29 +12,11 @@ class Host:
 		self.visited = False	# has this host been checked or not
 		self.interface = 0		# current interface host is listening onll
 		self.neighbors = []		# hosts connected to this host
-		self.if_descr = ''
+		#self.if_descr = ''
 		self.ent_table_nr = 0
 		self.vlan_id = ''
 		self.port_list = {}
 
 		self.if_table = {}
-
-
-	"""def hex_to_ip(self, hexNum):
-		numbers = str(hexNum.asNumbers())
-		octet = numbers.replace('(', '').replace(')', '').replace(' ', '').replace(',', '.')
-		return octet
-
-
-	def hex_to_mac(self, hexNum):
-		numbers = str(hexNum.asNumbers())
-		numbers = numbers.replace('(', '').replace(')', '').replace(',', '')
-		numList = numbers.split(' ')
-		
-		del numbers
-		numbers = ''
-		
-		for num in numList:
-			numbers += str(hex(int(num))[2:].zfill(2))
-		
-		return numbers"""
+		self.serial_number = ''
+		self.responds = True
