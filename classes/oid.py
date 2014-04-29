@@ -18,3 +18,4 @@ class OID:
 		self.cost_to_root = '.1.3.6.1.2.1.17.2.6.0'
 		self.lowest_cost_port = '.1.3.6.1.2.1.17.2.7.0'
 		self.serial_number = '1.3.6.1.2.1.47.1.1.1.1.11.1'
+		self.model = '1.3.6.1.2.1.47.1.1.1.1.13.1'
