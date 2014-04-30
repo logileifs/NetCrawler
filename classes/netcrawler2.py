@@ -3,6 +3,7 @@
 from snmpwrapper import SNMPWrapper
 from pingsweep import PingSweep
 from dicttoxml import dicttoxml
+from interface import Interface
 from subnet import Subnet
 from vlan import VLAN
 from host import Host
@@ -140,6 +141,7 @@ class NetCrawler:
 			host.if_descr = self.get_if_descr(host)
 			host.ent_table_nr = self.get_ent_table_nr(host)
 			host.vlan_id = self.get_vlan_id(host)
+			self.get_if_on_vlan(host)
 			self.get_port_list(host)
 
 		elif host.is_router():
@@ -195,8 +197,7 @@ class NetCrawler:
 
 		if net.in_network(address):
 			return True
-		else:
-			return False
+		else: return False
 
 
 	def get_interface(self, host):
@@ -300,6 +301,11 @@ class NetCrawler:
 					interface = str(name).split('1.3.6.1.2.1.2.2.1.6.', 1)[1]
 					mac = hex_to_mac(val)
 					host.if_table[interface] = { 'mac': mac }
+
+					intf = Interface()
+					intf.number = str(name).split('1.3.6.1.2.1.2.2.1.6.', 1)[1]
+					intf.mac = hex_to_mac(val)
+					host.add_interface(intf)
 		
 			del interface
 			del mac
@@ -315,6 +321,9 @@ class NetCrawler:
 					descr = str(val)
 					mac = host.if_table[interface]['mac']
 					host.if_table[interface] = { 'mac': mac, 'descr': descr, 'ips': [] }
+
+					intf = host.get_interface(interface)
+					intf.descr = descr
 
 				del interface
 				del mac
@@ -336,6 +345,29 @@ class NetCrawler:
 												'status': status, 'ips': [],
 												'connected': [] }
 
+					intf = host.get_interface(interface)
+					intf.status = status
+
+
+	def get_if_on_vlan(self, host):
+		"""dot1dBasePortIfIndex"""
+		from pprint import pprint
+
+		results = NetCrawler.snmp.walk(host.ip, '1.3.6.1.2.1.17.1.4.1.2', host.vlan_id)
+
+		if results is not None:
+			for result in results:
+				for name,val in result:
+					port = str(name).split('1.3.6.1.2.1.17.1.4.1.2.', 1)[1]
+					interface = str(val)
+					#print(str(name) + ' = ' + str(val))
+					#print('port ' + port + ' is on interface ' + str(val))
+					host.if_table[interface]['port'] = port
+
+					intf = host.get_interface(interface)
+					intf.port = port
+					#pprint(vars(intf))
+
 
 	def get_ips(self, host):
 		"""Get all IP addresses of host"""
@@ -348,6 +380,9 @@ class NetCrawler:
 					ip = str(name).split('1.3.6.1.2.1.4.20.1.2.',1)[1]
 					interface = str(val)
 					host.if_table[interface]['ips'].append(ip)
+
+					intf = host.get_interface(interface)
+					if intf: intf.ips.append(ip)
 
 		#from pprint import pprint
 		#pprint(vars(host))
@@ -504,11 +539,35 @@ class NetCrawler:
 			for result in results:
 				for name, val in result:
 					mac = dec_to_mac(str(name)[23:])
+					port = str(val)
 					host.if_table[str(val)]['connected'].append(mac)
+					#self.add_mac_on_if(host, port, mac)
 					host.port_list[dec_to_mac(str(name)[23:])] = int(val)
+
+					intf = host.get_interface_by_port(port)
+					intf.macs_connected.append(mac)
 
 		from pprint import pprint
 		pprint(vars(host))
+
+
+	"""def add_mac_on_if(self, host, port, mac):
+
+		print('adding mac ' + str(mac) + ' to interface with port ' + str(port))
+		interface = None
+
+		for name,val in host.if_table.iteritems():
+			#print('name: ' + str(name) + ' val.port: ' + str(val))
+			for n,v in val.iteritems():
+				if n == 'port' and v == port:
+					interface = name
+					print('found port ' + port + ' on interface ' + interface)
+					#print('port: ' + str(v))
+					break
+
+		if interface and mac not in host.if_table[interface]['connected']:
+			#print('found port ' + str(port) + ' on interface ' + str(interface))
+			host.if_table[interface]['connected'].append(mac)"""
 
 
 	def get_if_of_ip(self, host):
@@ -526,8 +585,8 @@ class NetCrawler:
 					#print(str(name) + ' = ' + str(val))
 					ip = str(name).split('.', 11)[11]
 					interface = str(val)
-					print('ip: ' + ip)
-					print('interface: ' + interface)
+					#print('ip: ' + ip)
+					#print('interface: ' + interface)
 					ipNetToMediaIfIndex[ip] = interface
 
 
@@ -578,6 +637,12 @@ class NetCrawler:
 	def print_hosts(self):
 
 		for net in self.subnets:
+			for host in net.host_list:
+				host.print_host()
+				print('interfaces:')
+				for interface in host.interfaces:
+					interface.print_interface()
+		"""for net in self.subnets:
 			print('Subnet ' + str(net.id))
 			for i,host in enumerate(net.host_list):
 				print('\tHost ' + str(i))
@@ -592,7 +657,7 @@ class NetCrawler:
 				print('\ttypes:')
 				print(host.types)
 				print('\tVisited: ' + str(host.visited))
-				print('')
+				print('')"""
 
 
 	def print_arp_cache(self):
