@@ -5,8 +5,8 @@ class Host:
 	def __init__(self):
 		"""Constructor"""
 		self.id = 'host'
-		self.mac = ''			# MAC address
-		self.ip = ''			# IP address
+		self.mac = ''			# MAC address on this subnet
+		self.ip = ''			# IP address on this subnet
 		self.port = None			# 
 		self.type = ''
 		self.name = ''			# hostname
@@ -24,6 +24,9 @@ class Host:
 		self.responds = True	# is the host answering snmp requests
 		self.types = []
 		self.interfaces = []
+		self.ips = []
+		self.macs = []
+		self.connections = []
 
 
 	def is_switch(self):
@@ -52,6 +55,7 @@ class Host:
 
 		return False
 
+
 	def get_interface(self, number):
 
 		for intf in self.interfaces:
@@ -70,6 +74,27 @@ class Host:
 		return None
 
 
+	def get_interface_by_mac(self, mac):
+		"""Return the interface a mac address has been learned on"""
+
+		for intf in self.interfaces:
+			if mac in intf.macs_connected:
+				return intf
+
+		return None
+
+
+	def add_neighbor(self, neighbor):
+
+		if neighbor not in self.neighbors:
+			self.neighbors.append(neighbor)
+
+
+	def add_connection(self, neighbor, port):
+
+		self.connections.append((neighbor, port))
+
+
 	def print_host(self):
 
 		print('id: ' + str(self.id))
@@ -85,6 +110,12 @@ class Host:
 		print('serial number: ' + str(self.serial_number))
 		print('model: ' + str(self.model))
 		print('responds: ' + str(self.responds))
+
+
+	def print_interfaces(self):
+
+		for interface in self.interfaces:
+			interface.print_interface()
 
 
 	#def __str__(self):
