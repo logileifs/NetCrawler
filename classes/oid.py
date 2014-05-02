@@ -6,8 +6,8 @@ class OID:
 	def __init__(self):
 		#self.hostname = '1.3.6.1.4.1.9.9.23.1.3.4.0'	#1.3.6.1.4.1.9.2.1.3 try this one
 		self.hostname = '1.3.6.1.4.1.9.2.1.3.0'
-		self.neighbors = '1.3.6.1.4.1.9.9.23.1.2.1.1.20'
-		self.neighbors2 = '1.3.6.1.4.1.9.9.23.1.2.1.1.4'
+		self.neighbors2 = '1.3.6.1.4.1.9.9.23.1.2.1.1.20'	#OLD - DO NOT USE
+		self.neighbors = '1.3.6.1.4.1.9.9.23.1.2.1.1.4'
 		self.vlans = '.1.3.6.1.4.1.9.9.46.1.3.1.1.2'
 		self.macs_on_vlan = '.1.3.6.1.2.1.17.4.3.1.1'
 		self.interface = '1.3.6.1.2.1.4.20.1.2'
