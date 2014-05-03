@@ -41,6 +41,18 @@ class Host:
 		return 'router' in self.types
 
 
+	def add_ip(self, ip):
+
+		if ip not in self.ips:
+			self.ips.append(ip)
+
+
+	def add_mac(self, mac):
+
+		if mac not in self.macs:
+			self.macs.append(mac)
+
+
 	def add_interface(self, interface):
 
 		if not self.interface_exists(interface):
@@ -92,7 +104,8 @@ class Host:
 
 	def add_connection(self, neighbor, port):
 
-		self.connections.append((neighbor, port))
+		if (neighbor, port) not in self.connections:
+			self.connections.append((neighbor, port))
 
 
 	def print_host(self):
