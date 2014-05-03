@@ -17,3 +17,18 @@ class Subnet:
 
 	def in_network(self, address):
 		return self.net.in_network(address)
+
+
+	def host_exists(self, host):
+
+		for h in self.host_list:
+			if host.id == h.id:
+				return True
+
+		return False
+
+
+	def add_host(self, host):
+
+		if not self.host_exists(host):
+			self.host_list.append(host)
