@@ -7,7 +7,7 @@ class Host:
 		self.id = 'host'
 		self.mac = ''			# MAC address on this subnet
 		self.ip = ''			# IP address on this subnet
-		self.port = None			# 
+		self.port = None		# 
 		self.type = ''
 		self.name = ''			# hostname
 		self.visited = False	# has this host been checked or not
@@ -42,24 +42,28 @@ class Host:
 
 
 	def add_ip(self, ip):
+		"""Add a new ip address to this host"""
 
 		if ip not in self.ips:
 			self.ips.append(ip)
 
 
 	def add_mac(self, mac):
+		"""Add a new mac address to this host"""
 
 		if mac not in self.macs:
 			self.macs.append(mac)
 
 
 	def add_interface(self, interface):
+		"""Add a new interface to this host"""
 
 		if not self.interface_exists(interface):
 			self.interfaces.append(interface)
 
 
 	def interface_exists(self, interface):
+		"""Check if this interface already exists at this host"""
 
 		for intf in self.interfaces:
 			if intf.number == interface.number:
@@ -69,6 +73,7 @@ class Host:
 
 
 	def get_interface(self, number):
+		"""Return interface with number=number, otherwise return None"""
 
 		for intf in self.interfaces:
 			if intf.number == number:
