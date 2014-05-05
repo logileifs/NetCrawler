@@ -1,0 +1,13 @@
+{
+	"nodes": [
+	{"neighbors": ["host0"], "name": "LAB-SW2", "ip": "192.168.60.253", "mac": "000a8adb39c0", "interface": 30, "id": "host4"}, 
+	{"neighbors": [], "name": "", "ip": "192.168.60.117", "mac": "0021709d9468", "interface": null, "id": "host3"}, 
+	{"neighbors": [], "name": "", "ip": "192.168.60.116", "mac": "001b63984753", "interface": null, "id": "host2"}, 
+	{"neighbors": ["host0"], "name": "LAB-R1", "ip": "192.168.60.1", "mac": "000dbdfef2a0", "interface": 1, "id": "host1"}, 
+	{"neighbors": ["host2", "host3", "host1", "host4"], "name": "LAB-SW1", "ip": "192.168.60.254", "mac": "000b5f4a6180", "interface": 29, "id": "host0"}], 
+	"links": [
+	{"source": 0, "target": 4}, 
+	{"source": 3, "target": 4}, 
+	{"source": 4, "target": 2}, 
+	{"source": 4, "target": 1}]
+}
