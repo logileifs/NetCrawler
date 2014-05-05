@@ -8,8 +8,8 @@ class Subnet:
 		self.broadcast = net.broadcast()
 		self.network = net.network()
 		
-		self.unknown_ips = []			#not in use
-		self.known_ips = []			#not in use
+		self.unknown_ips = []
+		self.known_ips = []
 		self.host_list = []
 		self.scanned = False
 
