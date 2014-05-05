@@ -41,6 +41,12 @@ class Host:
 		return 'router' in self.types
 
 
+	def add_type(self, host_type):
+
+		if host_type not in self.types:
+			self.types.append(host_type)
+
+
 	def add_ip(self, ip):
 		"""Add a new ip address to this host"""
 
@@ -115,19 +121,19 @@ class Host:
 
 	def print_host(self):
 
-		print('id: ' + str(self.id))
-		print('mac: ' + str(self.mac))
-		print('ip: ' + str(self.ip))
-		print('port: ' + str(self.port))
-		print('type: ' + str(self.type))
-		print('name: ' + str(self.name))
-		print('visited: ' + str(self.visited))
-		print('interface: ' + str(self.interface))
-		print('if_descr: ' + str(self.if_descr))
-		print('vlan_id: ' + str(self.vlan_id))
-		print('serial number: ' + str(self.serial_number))
-		print('model: ' + str(self.model))
-		print('responds: ' + str(self.responds))
+		print('\tid: ' + str(self.id))
+		print('\tmac: ' + str(self.mac))
+		print('\tip: ' + str(self.ip))
+		#print('\tport: ' + str(self.port))
+		print('\ttype: ' + str(self.type))
+		print('\tname: ' + str(self.name))
+		print('\tvisited: ' + str(self.visited))
+		#print('\tinterface: ' + str(self.interface))
+		print('\tif_descr: ' + str(self.if_descr))
+		print('\tvlan_id: ' + str(self.vlan_id))
+		print('\tserial number: ' + str(self.serial_number))
+		print('\tmodel: ' + str(self.model))
+		print('\tresponds: ' + str(self.responds))
 
 
 	def print_interfaces(self):
