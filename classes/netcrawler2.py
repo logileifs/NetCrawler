@@ -36,10 +36,11 @@ class NetCrawler:
 	def create_host(self, ip_addr):
 		"""Create a new host"""
 
-		print('CREATING NEW HOST WITH IP ' + str(ip_addr))
+		#print('CREATING NEW HOST WITH IP ' + str(ip_addr))
 
 		if self.ip_exists(ip_addr):
-			print('\tIP ALREADY EXISTS')
+			#print('\tIP ALREADY EXISTS')
+			return self.get_host_by_ip(ip_addr)
 
 		new_host = Host()
 		new_host.id += str(self.host_counter)
@@ -64,14 +65,9 @@ class NetCrawler:
 		"""Get required information from first host to start crawling"""
 
 		self.current_subnet = self.get_current_subnet(self.start_address)
-		print('current subnet: ' + str(self.current_subnet))
+		#print('current subnet: ' + str(self.current_subnet))
 
-		#new_host = self.create_host(self.start_address)
-		#self.add_unknown_ip(self.start_address)
 		self.current_subnet.add_unknown_ip(self.start_address)
-
-		#self.add_to_host_list(new_host)
-		#self.current_subnet.host_list.append(host)
 
 
 	def get_current_subnet(self, address):
@@ -136,16 +132,24 @@ class NetCrawler:
 			return False
 
 
+	def get_next_subnet(self):
+
+		for subnet in self.subnets:
+			if subnet.scanned == False:
+				return subnet
+
+
 	def crawl(self):
 
 		for subnet in self.subnets:
+			print('SCANNING SUBNET ' + str(subnet.id))
 			while self.current_subnet.unknown_ips:
-				print('unknown_ips:')
-				print(self.current_subnet.unknown_ips)
+				#print('unknown_ips:')
+				#print(self.current_subnet.unknown_ips)
 
 				ip_addr = self.current_subnet.get_next_unknown_ip()
 
-				print('checking ' + str(ip_addr))
+				print('CRAWLING ' + str(ip_addr))
 
 				new_host = self.create_host(ip_addr)
 				if self.snmp_ping(ip_addr):
@@ -167,12 +171,20 @@ class NetCrawler:
 					self.get_neighbors(host)
 
 			self.current_subnet.scanned = True
-			print('subnet ' + str(self.current_subnet.id) + ' scanned')
-			print('remaining subnets:')
-			print(self.subnets)
-			self.current_subnet = self.subnets[1]
+			print('SUBNET ' + str(self.current_subnet.id) + ' SCANNED')
+			#print('remaining subnets:')
+			#for subnet in self.subnets:
+				#if not subnet.scanned:
+					#print(subnet)
+			self.current_subnet = self.get_next_subnet()
 
-		self.print_arp_cache()
+		print('')
+		print('CRAWL FINISHED')
+		for subnet in self.subnets:
+			print('IN SUBNET ' + str(subnet.id))
+			for host in subnet.host_list:
+				host.print_host()
+				print('')
 
 
 	def crawl2(self):
@@ -286,10 +298,10 @@ class NetCrawler:
 			return False
 
 
-	def address_in_subnet(self, net, address):
+	def address_in_subnet(self, subnet, address):
 		"""Return true if address is in this subnet's range"""
 
-		if net.in_network(address):
+		if subnet.in_network(address):
 			return True
 		else: return False
 
@@ -297,7 +309,7 @@ class NetCrawler:
 	def get_interface(self, host):
 		"""Get the interface of the device on this subnet"""
 
-		print('Get interface for host ' + str(host.ip))
+		#print('Get interface for host ' + str(host.ip))
 
 		ip_found = False
 		interface = None
@@ -311,14 +323,13 @@ class NetCrawler:
 					if ip_addr == host.ip:
 						interface = int(val)
 
-
 		return interface
 
 
 	def get_mac(self, host):
 		"""Get host's MAC address"""
 
-		print('Getting MAC address')
+		#print('Getting MAC address')
 		mac = ''
 
 		result = NetCrawler.snmp.get(host.ip, self.oid.mac + '.' + str(host.interface))
@@ -344,24 +355,26 @@ class NetCrawler:
 					mac = hex_to_mac(val)
 					#print('mac: ' + mac)
 					
-					if self.in_current_subnet(ip_addr):
-						#self.add_unknown_ip(ip_addr)
-						self.current_subnet.add_unknown_ip(ip_addr)
-						#if not self.ip_exists(ip_addr) and not self.mac_exists(mac):
-							#new_host = self.create_host(ip_addr)
-							#new_host.mac = mac
-							#print(ip + ' is in current subnet')
-							#if not self.host_exists(new_host):
-								#self.add_to_host_list(new_host)
-								#print(str(new_host.ip) + ' added to host_list')
+					self.add_unknown_ip(ip_addr)
 
+					#if self.in_current_subnet(ip_addr):
+						#self.add_unknown_ip(ip_addr)
+						#self.current_subnet.add_unknown_ip(ip_addr)
+					
 					self.arp_cache[ip_addr] = mac
+
+
+	def add_unknown_ip(self, ip_addr):
+
+		for subnet in self.subnets:
+			if self.address_in_subnet(subnet, ip_addr):
+				subnet.add_unknown_ip(ip_addr)
 
 
 	def get_neighbors(self, host):
 		"""Get the neighbors of this host using Cisco Discovery Protocol"""
 
-		print('GETTING NEIGHBORS FOR ' + str(host.ip))
+		#print('GETTING NEIGHBORS FOR ' + str(host.ip))
 		results = NetCrawler.snmp.walk(host.ip, NetCrawler.oid.neighbors)
 
 		if results is not None:
@@ -374,13 +387,13 @@ class NetCrawler:
 					if neighbor:
 						#print('neighbor mac: ' + str(neighbor.mac))
 						intf = host.get_interface_by_mac(neighbor.mac)
-						print('ADDING NEIGHBOR ' + neighbor.ip + ' to host ' + host.ip)
-						print('ADDING NEIGHBOR ' + neighbor.mac + ' to host ' + host.mac)
+						#print('ADDING NEIGHBOR ' + neighbor.ip + ' to host ' + host.ip)
+						#print('ADDING NEIGHBOR ' + neighbor.mac + ' to host ' + host.mac)
 						host.add_neighbor(neighbor.id)
 						try:
 							host.add_connection(neighbor.id, intf.name)
 						except AttributeError:
-							host.print_interfaces()
+							print("couldn't add host " + neighbor.id + ' as neighbor of ' + host.id)
 						#print(neighbor.ip + ' is neighbor of ' + str(host.ip))
 						#print('the neighbor is on interface ' + intf.descr)
 
@@ -388,7 +401,7 @@ class NetCrawler:
 	def get_hostname(self, host):
 		"""Get the name of the host"""
 
-		print('Getting hostname')
+		#print('Getting hostname')
 		hostname = ''
 
 		result = NetCrawler.snmp.get(host.ip, NetCrawler.oid.hostname)
@@ -410,7 +423,8 @@ class NetCrawler:
 				for name, val in result:
 					interface = str(name).split('1.3.6.1.2.1.2.2.1.6.', 1)[1]
 					mac = hex_to_mac(val)
-					host.macs.append(mac)
+
+					host.add_mac(mac)
 
 					intf = Interface()
 					intf.number = str(name).split('1.3.6.1.2.1.2.2.1.6.', 1)[1]
@@ -488,10 +502,8 @@ class NetCrawler:
 				for name, val in result:
 					ip_addr = str(name).split('1.3.6.1.2.1.4.20.1.2.', 1)[1]
 					interface = str(val)
-					host.ips.append(ip_addr)
 
-#					self.add_known_ip(ip_addr)
-#					self.remove_unknown_ip(ip_addr)
+					host.add_ip(ip_addr)
 
 					self.current_subnet.add_known_ip(ip_addr)
 					self.current_subnet.remove_unknown_ip(ip_addr)
@@ -501,19 +513,18 @@ class NetCrawler:
 					if intf:
 						intf.ips.append(ip_addr)
 
-		#from pprint import pprint
-		#pprint(vars(host))
-
 
 	def get_type(self, host):
 		"""Check the type of the device"""
 
 		if self.router_check(host):
-			host.types.append('router')
+			#host.types.append('router')
+			host.add_type('router')
 			host.type = 'networking'
 		
 		if self.switch_check(host):
-			host.types.append('switch')
+			#host.types.append('switch')
+			host.add_type('switch')
 			host.type = 'networking'
 
 
@@ -657,8 +668,8 @@ class NetCrawler:
 	def get_macs_on_interface(self, host):
 		"""ipNetToMediaIfIndex"""
 
-		if host.ip == '192.168.60.254':
-			print('GETTING MACS ON INTERFACE FOR HOST ' + host.ip)
+		#if host.ip == '192.168.60.254':
+			#print('GETTING MACS ON INTERFACE FOR HOST ' + host.ip)
 
 		#ipNetToMediaIfIndex = {}
 		ip_to_interface = {}
@@ -719,6 +730,17 @@ class NetCrawler:
 		return model
 
 
+	def get_all_hosts(self):
+		"""docstring"""
+
+		all_hosts = []
+		for subnet in self.subnets:
+			for host in subnet.host_list:
+				all_hosts.append(host)
+
+		return all_hosts
+
+
 	def host_exists(self, new_host):
 		"""docstring"""
 
@@ -734,11 +756,15 @@ class NetCrawler:
 	def get_host_by_ip(self, ip_addr):
 		"""docstring"""
 
-		for host in self.current_subnet.host_list:
+		for host in self.get_all_hosts():
+			if ip_addr in host.ips:
+				return host
+
+		"""for host in self.current_subnet.host_list:
 			if ip_addr in host.ips:
 				return host
 			if ip_addr == host.ip:
-				return host
+				return host"""
 
 		return None
 
@@ -777,7 +803,7 @@ class NetCrawler:
 		"""docstring"""
 
 		for host in self.current_subnet.host_list:
-			print('check ports of ' + str(host.ip))
+			#print('check ports of ' + str(host.ip))
 			for intf in host.interfaces:
 				if intf.has_connections():
 					if intf.number_of_connections() == 1:
@@ -831,8 +857,8 @@ class NetCrawler:
 				network[host.id] = { 'mac': host.mac, 'name': host.name,
 											'ip': host.ip, 'visited': host.visited, 
 											'type': host.type, 'types': host.types,
-											'visited': host.visited,
-											'neighbors': host.neighbors }
+											'visited': host.visited, 'ips': host.ips,
+											'neighbors': host.neighbors, 'macs': host.macs }
 
 		#for key,val in network.iteritems():
 			#print(key, val)
