@@ -30,7 +30,7 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="navbar-brand" href="http://getbootstrap.com/examples/dashboard/#">NetCrawler</a>
+          <a class="navbar-brand" href="">NetCrawler</a>
         </div>
         <div class="navbar-collapse collapse">
           <!--<ul class="nav navbar-nav navbar-right">
@@ -60,10 +60,10 @@
             <div class="panel-heading"><b>Host</b></div>
             <!-- List group -->
             <ul class="list-group">
-              <li class="list-group-item">Name: <span id="name"></li>
-              <li class="list-group-item">Mac: <span id="mac"></li>
-              <li class="list-group-item">IP: <span id="ip"></li>
-              <li class="list-group-item">Interface: <span id="interface"></span>
+              <li class="list-group-item"><strong>Name: </strong><span id="name"></li>
+              <li class="list-group-item"><strong>Mac: </strong><span id="mac"></li>
+              <li class="list-group-item"><strong>IP: </strong><span id="ip"></li>
+              <li class="list-group-item"><strong>Interface: </strong><span id="interface"></span>
             </ul>
           </div>
 
@@ -71,11 +71,10 @@
             <div class="panel-heading"><b>Colors</b></div>
               <ul class="list-group">
                  <li class="list-group-item"><span class="swatch_3d_32" style="background-color:#E98931;" title="#E98931"></span>&nbsp Selected</li>
-                 <li class="list-group-item"><span class="swatch_3d_32" style="background-color:#274389;" title="#274389"></span>&nbsp Router</li>
+                 <li class="list-group-item"><span class="swatch_3d_32" style="background-color:#1F5EA8;" title="#1F5EA8"></span>&nbsp Router</li>
                  <li class="list-group-item"><span class="swatch_3d_32" style="background-color:#39C0B3;" title="#39C0B3"></span>&nbsp Switch</li>
-                 <li class="list-group-item"><span class="swatch_3d_32" style="background-color:#6C2A6A;" title="#6C2A6A"></span>&nbsp End device</li>
-                 <li class="list-group-item"><span class="swatch_3d_32" style="background-color:#EB403B;" title="#EB403B"></span>&nbsp Unknown</li>
-                
+                 <li class="list-group-item"><span class="swatch_3d_32" style="background-color:#AA40FF;" title="#AA40FF"></span>&nbsp End device</li>
+                 <li class="list-group-item"><span class="swatch_3d_32" style="background-color:#EB403B;" title="#EB403B"></span>&nbsp Unknown</li>               
 <!--
                 #FBB735
                 #E98931
@@ -90,15 +89,24 @@
                 #39C0B3 Switch
 -->             
               </div>
-              <div class="btn-group-vertical">
-                <button type="button" class="btn btn-default" id="showport" value="Show and hide port numbers">Port numbers</button><br>
-              </div>
             </div>
         </div>
 
         <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
           <h1 class="page-header">Network</h1>
-
+          <div class="btn-group">
+              <button type="button" class="btn btn-default" id="showport" value="Show and hide port numbers">Show Ports</button>
+              <!--<div class="btn-group">
+                <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                  Dropdown
+                  <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu">
+                  <li><a href="#">Dropdown link</a></li>
+                  <li><a href="#">Dropdown link</a></li>
+                </ul>
+              </div>-->
+          </div>
           <div class="row placeholders">
             <div class="col-xs-6 col-sm-3 placeholder">
               <div id="network"></div>

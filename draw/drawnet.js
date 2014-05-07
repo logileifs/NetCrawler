@@ -1,12 +1,12 @@
 var width = 1000,
     height = 600;
 
-var color = d3.scale.category20();
+//var color = d3.scale.category20();
 
 var linkNormal = 4,
     linkBold = 6,
     nodeNormal = 14,
-    nodeBold = 16;
+    nodeBold = 17;
 
 var force = d3.layout.force()
     .charge(-500)
@@ -20,6 +20,9 @@ var svg = d3.select("#network").append("svg")
     .attr("height", height);
 
 d3.json("net.json", function(error, graph) {
+
+  var select;
+
   force
       .nodes(graph.nodes)
       .links(graph.links)
@@ -46,13 +49,26 @@ d3.json("net.json", function(error, graph) {
       .style("fill", function(d) {return typeColoring(d.type);})
       .call(force.drag)
       .on('click', function(d){
-        d3.select(current).style("fill", function(d) { return typeColoring(d.type); }).attr("r", nodeNormal);
-        current = this;
-        d3.select(this).style("fill", "#E98931").attr("r", nodeBold);
-        $("#ip").text(d.ip);
-        $("#interface").text(d.interface);
-        $("#name").text(d.name);
-        $("#mac").text(d.mac);
+        d3.select(current).style("fill", function(d) { return typeColoring(d.type); }).transition().attr("r", nodeNormal)
+        .duration(200);
+        if(current != this) {
+          current = this;
+          d3.select(this).style("fill", "#E98931")
+          .transition()
+          .attr("r", nodeBold)
+          .duration(200);
+          $("#ip").text(d.ip);
+          $("#interface").text(d.interface);
+          $("#name").text(d.name);
+          $("#mac").text(d.mac);
+        }
+        else {
+          current = null;
+          $("#ip").text("");
+          $("#interface").text("");
+          $("#name").text("");
+          $("#mac").text("");
+        }
       });
 
   var linkpaths = svg.selectAll(".linkpath")
@@ -86,10 +102,28 @@ d3.json("net.json", function(error, graph) {
         .style("pointer-events", "none")
         .text(function(d){return d.sport + "-" + d.tport});
 
-  
-
-  //node.append("title")
-  //    .text(function(d) { return d.name; });
+  function typeColoring(type) {
+    if(type === "router") 
+      return "#1F5EA8" 
+    else if(type === "switch") 
+      return "#39C0B3"
+    else if(type === "end_device") 
+      return "#AA40FF"
+    else // Unknown type
+      return "#EB403B"
+/*  
+    #E98931
+    #EB403B
+    #B32E37
+    #6C2A6A
+    #5C4399
+    #274389
+    #1F5EA8
+    #227FB0
+    #2AB0C5
+    #39C0B3
+*/
+  }
 
   force.on("tick", function() {
     link.attr("x1", function(d) { return d.source.x; })
@@ -131,7 +165,6 @@ d3.json("net.json", function(error, graph) {
             }
      });*/
   });
-
   
   node.on('mouseover', function(d) {
     link.style('stroke-width', function(l) {
@@ -170,6 +203,9 @@ d3.json("net.json", function(error, graph) {
   var showPortNbrs = false;
 
   $('#showport').click( function() {
+    $(this).text(function(i, text){
+          return text === "Show Ports" ? "Hide Ports" : "Show Ports";
+      })
     if(!showPortNbrs) {
       linklabels.attr('fill', '#000');
       showPortNbrs = true;
@@ -180,27 +216,5 @@ d3.json("net.json", function(error, graph) {
     }
   });
 
-  function typeColoring(type) {
-    if(type === "router") 
-      return "#274389" 
-    else if(type === "switch") 
-      return "#39C0B3"
-    else if(type === "end_device") 
-      return "#6C2A6A"
-    else // Unknown type
-      return "#EB403B"
-/*  
-#E98931
-#EB403B
-#B32E37
-#6C2A6A
-#5C4399
-#274389
-#1F5EA8
-#227FB0
-#2AB0C5
-#39C0B3
-*/
-  }
 
 });
