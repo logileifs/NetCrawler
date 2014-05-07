@@ -8,21 +8,25 @@ from subnet import Subnet
 #from vlan import VLAN
 from host import Host
 from oid import OID
+import getopt
 import ipcalc
 import json
 import sys
+import re
 
 class NetCrawler:
 	"""NetCrawler main class"""
-	oid = OID()
+	#oid = OID('cisco')
+	oid = None
 	snmp = SNMPWrapper()
 
-	def __init__(self, args):
+	def __init__(self, address, community, port, depth):
 
-		self.start_address = args[0]
-		NetCrawler.snmp.community_str = args[1]
-		self.port = args[2]
-		self.depth = args[3]
+		self.start_address = address
+		NetCrawler.snmp.community_str = community
+		self.port = port
+		self.depth = depth
+		print('depth: ' + str(self.depth))
 
 		self.current_subnet = None
 		self.subnets = []
@@ -30,18 +34,26 @@ class NetCrawler:
 		self.host_counter = 0
 		self.all_hosts = []
 
-		print('depth: ' + str(self.depth))
+		#print('depth: ' + str(self.depth))
 
-		#self.unknown_ips = []
-		#self.known_ips = []
+
+	def get_oid(self, vendor=''):
+
+		NetCrawler.oid = OID(vendor)
+
+
 
 
 	def initialize(self):
 		"""Get required information from first host to start crawling"""
 
+		self.get_oid()
+
 		self.current_subnet = self.get_current_subnet(self.start_address)
 
 		self.current_subnet.add_unknown_ip(self.start_address)
+
+		#kill('First host did not answer SNMP')
 
 
 	def create_host(self, ip_addr):
@@ -112,13 +124,12 @@ class NetCrawler:
 					if net.in_network(address):
 						subnet = Subnet(net)
 						self.add_subnet(subnet)
-						#print('FOUND SUBNET')
 
 		return subnet
 
 
 	def get_subnets(self, host):
-		"""Get all the subnets this host is aware of"""
+		"""Get all the subnets that this host is aware of"""
 
 		subnet = None
 		results = NetCrawler.snmp.walk(host.ip, '1.3.6.1.2.1.4.20.1.3')
@@ -147,6 +158,8 @@ class NetCrawler:
 
 		if result is not None:
 			host.responds = True
+			# Here should the vendor of the device be known
+			# host.vendor = ''
 			return True
 		else:
 			host.responds = False
@@ -163,7 +176,8 @@ class NetCrawler:
 	def crawl(self):
 
 		for i, subnet in enumerate(self.subnets):
-			if i > self.depth:
+			print('current depth: ' + str(i))
+			if i >= self.depth:
 				print('MAXIMUM DEPTH REACHED')
 				break
 			print('SCANNING SUBNET ' + str(subnet.id))
@@ -177,8 +191,11 @@ class NetCrawler:
 
 				new_host = self.create_host(ip_addr)
 				if self.snmp_ping(new_host):
+					new_host.responds = True
+					self.get_oid(new_host.vendor)
 					self.get_info(new_host)
 				else:
+					new_host.responds = False
 					new_host.type = 'end_device'
 					"""If host doesn't answer snmp"""
 					"""get mac address from arp cache"""
@@ -1038,73 +1055,81 @@ def dec_to_mac(dec_string):
 	return hex_string
 
 
-def parse_input(args):
-	"""docstring"""
-	found_port = False
-	found_address = False
-	found_community = False
-	depth = 1
-	#debug_mode = False
-	#subnet = None
-
-	for arg in args:
-		if(arg == args[0]):
-			continue
-		if(arg[0:2] == 'p='):
-			found_port = True
-			port = int(arg[2:])
-		if(arg[0:2] == 'a='):
-			found_address = True
-			#if str(arg).find('/') != -1:
-				#address = str(arg[2:-3])
-				#subnet = str(arg[2:])
-			#else:
-			address = str(arg[2:])
-			print('address: ' + address)
-		if(arg[0:2] == 'c='):
-			found_community = True
-			community = str(arg[2:])
-		if(arg[0:2] == 'd='):
-			depth = int(arg[2:])
-		#if(arg[0:1] == 'd'):
-			#debug_mode = True
-
-	if(not found_address):
-		kill('Must provide an address')
-	if(not found_port):
-		port = 161
-		print('No port argument found, using default port 161')
-	if(not found_community):
-		community = 'public'
-		print('Default community set to public')
-
-	arguments = [address, community, port, depth]
-	return arguments
-
-
 def kill(why):
 	"""Kill the program"""
+
 	print(why)
 	sys.exit(1)
+
+
+def print_help():
+
+	print('')
+	print('Welcome to Men&Mice NetCrawler' )
+	print('Usage: netcrawler.py -a <address> [-c <community>]' )
+	print('			[-d <depth>]')
+	print('                  [-l <file>][--log=<file>]' )
+	print('                  [--debug]' )
+	print('                  [-h][--help]' )
+	print('Example: python netcrawler.py -a 192.168.60.254 -c public -d 3')
+	#print('')
+
+
+def parse_arguments(opts, extraparams):
+
+	# initialized data
+	address = None
+	community = 'public'
+	port = 161
+	depth = 1
+
+	for o, p in opts:
+		if o == '-a':
+			address = p
+			result = re.match('^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$', address)
+			if result is None:
+				raise Exception('Invalid ip address')
+		elif o == '-c':
+			community = p
+		elif o == '-d':
+			depth = int(p)
+		elif o == '-p':
+			port = p
+		#elif o in ('-b', 'debug'):
+			#logging.getLogger().setLevel(logging.DEBUG)
+		#elif o in ('-l', '--log'):
+			#hdlr = logging.FileHandler(p)			
+		elif o in ('-h', '--help'):
+			print_help()
+			kill('Help printed')
+
+	if not address:
+		raise Exception('No address argument')
+
+	return address, community, port, depth
 
 
 def main():
 	"""Main function to invoke the NetCrawler"""
 
-	arguments = parse_input(sys.argv)
-	crawler = NetCrawler(arguments)
+	# set up logger
+	"""tmpLog = logging.getLogger(__name__)
+	hdlr = logging.StreamHandler(sys.stderr)
+	logging.getLogger().setLevel(logging.WARNING)"""
+	
 
+	opts, extraparams = getopt.getopt(sys.argv[1:], 'hbl:a:c:p:d:',['debug', 'log=', 'help'])
+	
+	try:
+		address, community, port, depth = parse_arguments(opts, extraparams)
+	except Exception, msg:
+		print_help()
+		kill(msg)
+
+	crawler = NetCrawler(address, community, port, depth)
 	crawler.initialize()
 	crawler.crawl()
-
-	#crawler.print_hosts()
-
-	#crawler.generate_xml()
 	crawler.generate_json()
-
-	#draw_net = drawnetwork.DrawNetwork()
-	#draw_net.draw(crawler.network)
-
 
 if __name__ == '__main__':
 	main()
