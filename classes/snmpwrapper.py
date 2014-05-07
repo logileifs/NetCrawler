@@ -5,7 +5,7 @@ from oid import OID
 class SNMPWrapper:
 	"""docstring for SNMPWrapper"""
 
-	oid = OID()
+	#oid = OID()
 
 	def __init__(self, community_str=''):
 		self.community_str = community_str
@@ -87,7 +87,7 @@ class SNMPWrapper:
 	def walk_error(self, indication, status, index, address, var_bind_table):
 		"""SNMP WALK error handler"""
 
-		print('SNMPWALK ERROR')
+		#print('SNMPWALK ERROR')
 
 		if indication:
 			print(str(indication) + ' from ' + str(address))
@@ -100,7 +100,7 @@ class SNMPWrapper:
 	def get_error(self, indication, status, index, address):
 		"""SNMP GET error handler"""
 		
-		print('SNMPGET ERROR')
+		#print('SNMPGET ERROR')
 
 		if indication:
 			print(str(indication) + ' from ' + str(address))
