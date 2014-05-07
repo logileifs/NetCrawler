@@ -46,10 +46,10 @@ d3.json("net.json", function(error, graph) {
       .enter().append("circle")
       .attr("class", "node")
       .attr("r", nodeNormal)
-      .style("fill", function(d) {return typeColoring(d.type);})
+      .style("fill", function(d) {return typeColoring(d.type, d.types);})
       .call(force.drag)
       .on('click', function(d){
-        d3.select(current).style("fill", function(d) { return typeColoring(d.type); }).transition().attr("r", nodeNormal)
+        d3.select(current).style("fill", function(d) { return typeColoring(d.type, d.types); }).transition().attr("r", nodeNormal)
         .duration(200);
         if(current != this) {
           current = this;
@@ -58,16 +58,18 @@ d3.json("net.json", function(error, graph) {
           .attr("r", nodeBold)
           .duration(200);
           $("#ip").text(d.ip);
-          $("#interface").text(d.interface);
           $("#name").text(d.name);
           $("#mac").text(d.mac);
+          $("#serial").text(d.serial);
+          $("#type").text(parseType(d.type, d.types));
         }
         else {
           current = null;
           $("#ip").text("");
-          $("#interface").text("");
           $("#name").text("");
           $("#mac").text("");
+          $("#serial").text("");
+          $("#type").text("");
         }
       });
 
@@ -102,15 +104,43 @@ d3.json("net.json", function(error, graph) {
         .style("pointer-events", "none")
         .text(function(d){return d.sport + "-" + d.tport});
 
-  function typeColoring(type) {
-    if(type === "router") 
-      return "#1F5EA8" 
-    else if(type === "switch") 
-      return "#39C0B3"
-    else if(type === "end_device") 
-      return "#AA40FF"
+  function parseType(type, types) {
+    if(type === "end_device")
+      return "end device";
+    else if(type === "networking") {
+      if(types.length === 1) 
+        return types[0];
+      else if(types.length === 2) {
+        if((types[0] === "router" && types[1] === "switch") || (types[0] === "switch" && types[1] === "router"))
+          return "router/switch"
+        else
+          return "unknown";
+      }
+    }
+    else
+      return "unknown";
+  }
+
+  function typeColoring(type, types) {
+
+    if(type === "end_device") 
+      return "#AA40FF";
+    else if(types.length === 1) {
+      if(types[0] === "router") 
+        return "#1F5EA8";      
+      else if(types[0] === "switch") 
+        return "#39C0B3";
+      else // Unknown type
+      return "#EB403B";
+    }
+    else if(types.length === 2) {
+      if((types[0] === "router" && types[1] === "switch") || (types[0] === "switch" && types[1] === "router"))
+        return "#719207"
+      else // Unknown type
+        return "#EB403B";
+    }
     else // Unknown type
-      return "#EB403B"
+      return "#EB403B";
 /*  
     #E98931
     #EB403B
@@ -215,6 +245,4 @@ d3.json("net.json", function(error, graph) {
       showPortNbrs = false;
     }
   });
-
-
 });
