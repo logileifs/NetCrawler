@@ -27,6 +27,7 @@ class Host:
 		self.ips = []
 		self.macs = []
 		self.connections = []
+		self.vendor = ''
 
 
 	def is_switch(self):
