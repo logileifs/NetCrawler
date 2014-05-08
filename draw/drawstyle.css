@@ -23,3 +23,8 @@ div.tooltip {
   color: #000; 
 
 }
+
+.dropdown-menu{
+	overflow: auto;
+	max-height: 200px;
+}
