@@ -1,4 +1,3 @@
-
 var width = 1500,
     height = 750,
     fill = d3.scale.category20();
@@ -24,7 +23,8 @@ vis.append('svg:rect')
     .attr('fill', 'white');
 
 function redraw() {
-  //console.log("here", d3.event.translate, d3.event.scale);
+
+  console.log("here", d3.event.translate, d3.event.scale);
   vis.attr("transform",
       "translate(" + d3.event.translate + ")"
       + " scale(" + d3.event.scale + ")");
@@ -76,8 +76,8 @@ function draw(json) {
     .enter().append("svg:circle")
     .attr("class", "node")
     .attr("rel", "popover")
-			.attr("data-original-title", function(d){return '<div class="panel-heading"><b>Host </b>'+d.id+'</div>'})
-			.attr("data-content", function(d){return createHTML(d)})
+		.attr("data-original-title", function(d){return '<div class="panel-heading"><b>Host </b>'+d.id+'</div>'})
+		.attr("data-content", function(d){return createHTML(d)})
 		.attr("id", function(d,i){return d.id})
     .attr("cx", function(d) { return d.x; })
     .attr("cy", function(d) { return d.y; })

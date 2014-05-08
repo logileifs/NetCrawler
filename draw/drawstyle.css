@@ -1,5 +1,5 @@
 .node {
- 
+	stroke-width: 2px;
 }
 
 .link {
@@ -11,15 +11,12 @@
 	height: 15px;
 	width: 15px;
 	display: inline-block;
-  margin: -2px;
+  	margin: -2px;
 }
 
-.color
-
-div.tooltip {   
-        
+div.tooltip {        
   text-align: center;           
-  font: 20px sans-serif;
+  font: 18px sans-serif;
   color: #000; 
 
 }
