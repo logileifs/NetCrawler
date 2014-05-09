@@ -29,6 +29,8 @@ class Host:
 		self.connections = []
 		self.vendor = ''
 
+		self.connections2 = []
+
 
 	def is_switch(self):
 		"""Return true if host is a switch"""
@@ -103,6 +105,16 @@ class Host:
 
 		for intf in self.interfaces:
 			if mac in intf.macs_connected:
+				return intf
+
+		return None
+
+
+	def get_interface_by_descr(self, descr):
+		"""Return the interface with descr"""
+
+		for intf in self.interfaces:
+			if descr == intf.descr:
 				return intf
 
 		return None
