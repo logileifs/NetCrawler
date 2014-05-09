@@ -6,7 +6,11 @@ var linkNormal = 2,
     linkBold = 4,
     nodeNormal = 5,
     nodeBold = 8,
-    current;
+    chargeNormal = -550,
+    chargeMore = -550,
+    current,
+    showPortNbrs = false,
+    colorType ="";
 
 var vis = d3.select("#network")
     .append("svg:svg")
@@ -23,39 +27,38 @@ vis.append('svg:rect')
     .attr('fill', 'white');
 
 function redraw() {
-
-  console.log("here", d3.event.translate, d3.event.scale);
   vis.attr("transform",
       "translate(" + d3.event.translate + ")"
       + " scale(" + d3.event.scale + ")");
 }
 
 function createHTML(d){
-
-		var ul = '<ul class="list-group">';
-    var li1 = '<li class="list-group-item"><strong>Name: </strong><span id="name">'+d.name+'</span></li>';
-    var li2 = '<li class="list-group-item"><strong>Serial number: </strong><span id="serial">'+d.serial+'</span></li>';
-    var li3 = '<li class="list-group-item"><strong>Model number: </strong><span id="model">'+d.model+'</span></li>';
+		var html = '<ul class="list-group">';
+    html += '<li class="list-group-item"><strong>Name: </strong><span id="name">'+d.name+'</span></li>';
+    html += '<li class="list-group-item"><strong>Serial number: </strong><span id="serial">'+d.serial+'</span></li>';
+    html += '<li class="list-group-item"><strong>Model number: </strong><span id="model">'+d.model+'</span></li>';
               
-      var ulend= '';//'</ul>';
-      var dd = '<li class="list-group-item"><div id="dd'+d.id+'" class="btn-group"><button type="button" class="btn btn-default dropdown-toggle macs" data-toggle="dropdown">MAC addresses</button><ul id="host0ul" class="dropdown-menu">';
+    html += '<li class="list-group-item"><div id="dd'+d.id+'" class="btn-group"><button type="button" class="btn btn-default dropdown-toggle macs" data-toggle="dropdown">MAC addresses</button><ul id="host0ul" class="dropdown-menu">';
 
-      console.log('createHTML');
-      for(var i=0; i<d.macs.length; i++)
-      {
-      	var limac = '<li><a href="#">'+d.macs[i]+'</a></li>';
-      	dd += limac;
-      	console.log(d.macs[i]);
-      }
-      dd += '</ul></ul>';
+    for(var i=0; i<d.macs.length; i++)
+    	html += '<li><a href="#">'+d.macs[i]+'</a></li>';
 
-      return ul+li1+li2+li3+ulend+dd;
+    html += '</ul>';//</ul>';
+    html += '<li class="dropdown list-group-item"><button class="btn btn-default dropdown-toggle ips" data-toggle="dropdown" href="#">IP addresses<b class="caret"></b></button><ul class="dropdown-menu">';
+
+    for(var i=0; i<d.ips.length; i++)
+      html += '<li><a href="#">'+d.ips[i]+'</a></li>';
+
+    html += '</ul>';//</ul>';
+    html += '</ul>';
+
+    return html;
 	}
 
 function draw(json) {
   var force = d3.layout.force()
-    .charge(-120)
-    .linkDistance(30)
+    .charge(chargeNormal)
+    .linkDistance(40)
     .nodes(json.nodes)
     .links(json.links)
     .size([width, height])
@@ -76,21 +79,20 @@ function draw(json) {
     .enter().append("svg:circle")
     .attr("class", "node")
     .attr("rel", "popover")
-		.attr("data-original-title", function(d){return '<div class="panel-heading"><b>Host </b>'+d.id+'</div>'})
+		.attr("data-original-title", function(d){return '<div class="panel-heading"><b>Host '+parseId(d.id)+'</b></div>'})
 		.attr("data-content", function(d){return createHTML(d)})
-		.attr("id", function(d,i){return d.id})
+		.attr("id", function(d) { return d.id; })
     .attr("cx", function(d) { return d.x; })
     .attr("cy", function(d) { return d.y; })
     .attr("r", nodeNormal)
-    .style("fill", function(d) {return typeColoring(d.type, d.types);})
-    .call(force.drag)
+    .style("fill", function(d) { return coloring(parseType(d.type, d.types)) })
     .on('click', function(d){
-      d3.select(current).style("stroke", function(d) { return typeColoring(d.type, d.types); })
+      d3.select(current)//.style("stroke", function(d) { return coloring(parseType(d.type, d.types)) })
       .transition().attr("r", nodeNormal)
       .duration(200);
       if(current != this) {
           current = this;
-          d3.select(this).style("stroke", "black")
+          d3.select(this)//.style("stroke", "black")
           .transition()
           .attr("r", nodeBold)
           .duration(200);
@@ -109,18 +111,80 @@ function draw(json) {
           $("#type").text("");
         }
     });
-      
-  vis.style("opacity", 1e-6)
-    .transition()
-    .duration(1000)
-    .style("opacity", 1);
 
-  node.on('mouseover', function(d) {
-    link.style('stroke-width', function(l) {
-      if (d === l.source || d === l.target)
-        return linkBold;
-      else
-        return linkNormal;
+  var linkpaths = vis.selectAll(".linkpath")
+    .data(json.links)
+    .enter()
+    .append('path')
+    .attr({'d': function(d) {return 'M '+d.source.x+' '+d.source.y+' L '+ d.target.x +' '+d.target.y},
+           'class':'edgelabel',
+           'fill-opacity':0,
+           'stroke-opacity':0,
+           'fill':'blue',
+           'stroke':'red',
+           'id':function(d,i) {return 'linklabel'+i}})
+    .style("pointer-events", "none");
+
+  var linklabels = vis.selectAll(".linklabel")
+        .data(json.links)
+        .enter()
+        .append('text')
+        .style("pointer-events", "none")
+        .attr('fill','transparent')
+        .attr({'class':'linklabel',
+               'id':function(d,i){return 'linklabel'+i},
+               'dx':80,
+               'dy':0,
+               'font-size':14,});
+
+  linklabels.append('textPath')
+        .data(json.links)
+        .attr('xlink:href',function(d,i) {return '#linklabel'+i})
+        .style("pointer-events", "none")
+        .text(function(d){
+        var source = d.sport;
+        var target = d.tport;
+        
+        if((source[0] === 'V' && source[1] === 'l') || (target[0] === 'V' && target[1] === 'l'))
+          return "";
+        else {
+          if(source === "unknown")
+            source = "?";
+          if(target === "unknown")
+            target = "?";
+
+          return source + "-" + target;
+        }
+
+      });
+
+  $('#showport').click( function() {
+    $(this).text(function(i, text){
+          return text === "Show Ports" ? "Hide Ports" : "Show Ports";
+      })
+    if(!showPortNbrs) {
+      linklabels.attr('fill', '#000').attr('text-anchor', 'middle');
+      force.linkDistance(function (d) {return 150}).charge(chargeMore).start();
+      showPortNbrs = true;
+    }
+    else {
+      linklabels.attr('fill', 'transparent');
+      force.linkDistance(function (d) {return 40}).charge(chargeNormal).start();
+      showPortNbrs = false;
+    }
+  });
+        
+    vis.style("opacity", 1e-6)
+          .transition()
+          .duration(1000)
+          .style("opacity", 1);
+
+    node.on('mouseover', function(d) {
+      link.style('stroke-width', function(l) {
+        if (d === l.source || d === l.target)
+          return linkBold;
+        else
+          return linkNormal;
     });
 
     div.transition()  
@@ -145,6 +209,17 @@ function draw(json) {
 			container:'body'
 		});
 
+  $('#network').on('click', function (e) {
+    $(".node").each(function () {
+        if (!$(this).is(e.target) && $(this).has(e.target).length === 0 && $('.popover').has(e.target).length === 0) {
+            $(this).popover('hide');
+            d3.select(this)
+              .transition().attr("r", nodeNormal)
+              .duration(200);  
+        }
+    });
+  });
+
   link.on('mouseover', function() {
     d3.select(this).style("stroke-width", linkBold);
   });
@@ -161,11 +236,47 @@ function draw(json) {
 
       node.attr("cx", function(d) { return d.x; })
           .attr("cy", function(d) { return d.y; });
+
+      linkpaths.attr('d', function(d) { var path='M '+d.source.x+' '+d.source.y+' L '+ d.target.x +' '+d.target.y; 
+                                        return path});
   });
 
-  var div = d3.select("body").append("div")   
-    .attr("class", "tooltip")               
-    .style("opacity", 0);
+  $(document).on('click', '.dropdown-menu li a', function () {
+            colorType = $(this).text().toLowerCase();
+            
+            d3.selectAll(".node").style("fill", function(d) { return coloring(parseType(d.type, d.types))})
+                                 .style("stroke", function(d) { return coloring(parseType(d.type, d.types))});
+            //coloring(colorType);
+        });
+
+  function coloring(type) {
+    if(colorType === "") {
+      return "#39C0B3";
+    }
+    else if(colorType === type) {
+      return "#E98931";
+    }
+    else if(colorType === type) {
+      return "#E98931";
+    }
+    else if(colorType === type) {
+      return "#E98931";
+    }
+    else if(type === "router/switch") {
+     if (colorType === "router" || colorType === "switch") 
+      return "#E98931";
+     else 
+      return "#39C0B3";
+    }
+    else
+      return "#39C0B3";
+  
+  };
+
+
+var div = d3.select("body").append("div")   
+        .attr("class", "tooltip")               
+        .style("opacity", 0);
 };
 
 function parseType(type, types) {
@@ -206,8 +317,14 @@ function typeColoring(type, types) {
     return "#EB403B";
 }
 
+function parseId(id) {
+  return id.substr(4);
+}
+
 $( document ).ready(function() {
     $.getJSON("net.json", function(json) {
       draw(json);
     });
+
+
 });
