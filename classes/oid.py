@@ -5,7 +5,7 @@ class OID:
 
 	def __init__(self, vendor=''):
 
-		print('CREATING OID INSTANCE - VENDOR: ' + str(vendor))
+		#print('CREATING OID INSTANCE - VENDOR: ' + str(vendor))
 
 		if vendor == '' or 'cisco':
 			#self.hostname = '1.3.6.1.4.1.9.9.23.1.3.4.0'	#1.3.6.1.4.1.9.2.1.3 try this one
@@ -23,3 +23,6 @@ class OID:
 			self.lowest_cost_port = '.1.3.6.1.2.1.17.2.7.0'
 			self.serial_number = '1.3.6.1.2.1.47.1.1.1.1.11.1'
 			self.model = '1.3.6.1.2.1.47.1.1.1.1.13.1'
+
+		#if vendor == 'juniper':
+			
