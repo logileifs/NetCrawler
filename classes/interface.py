@@ -26,6 +26,12 @@ class Interface:
 		return len(self.macs_connected)
 
 
+	def add_mac(self, mac):
+
+		if str(mac) not in self.macs_connected:
+			self.macs_connected.append(mac)
+
+
 	def print_interface(self):
 
 		print('\tnumber: ' + str(self.number))
