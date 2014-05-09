@@ -1,6 +1,6 @@
 """This program crawls a network and maps it"""
 
-from snmpwrapper import SNMPWrapper
+from classes.snmpwrapper import SNMPWrapper
 #from pingsweep import PingSweep
 #from dicttoxml import dicttoxml
 from interface import Interface
@@ -8,6 +8,7 @@ from subnet import Subnet
 #from vlan import VLAN
 from host import Host
 from oid import OID
+import subprocess
 import getopt
 import ipcalc
 import json
@@ -883,7 +884,7 @@ class NetCrawler:
 		"""docstring"""
 
 		temp_network = self.parse_dict_for_json()
-		with open('network.json', 'w') as my_file:
+		with open('draw/net.json', 'w') as my_file:
 			json.dump(temp_network, my_file)
 
 
@@ -927,16 +928,6 @@ class NetCrawler:
 		node_list = nodes['nodes']
 		links = []
 
-		"""for node in node_list:
-			neighbors = node['neighbors']
-			if neighbors:
-				source = node_list.index(node)
-				for neighbor in neighbors:
-					for neighbor2 in node_list:
-						if neighbor in neighbor2.values():
-							link = {'source' : source, 'target' : node_list.index(neighbor2)}
-							links.append(link)"""
-
 		host_to_index = {}
 		for node in node_list:
 			source = node_list.index(node)
@@ -963,54 +954,27 @@ class NetCrawler:
 					link['tport'] = link2['sport']
 
 		for link in links:
+			link['source'] = host_to_index[link['source']]
+			link['target'] = host_to_index[link['target']]
 			if 'tport' not in link.keys():
 				link['tport'] = 'unknown'
 			print(link)
 
-		"""link_list = []
-		for node in node_list:
-			source = node_list.index(node)
-			for connection in node['connections']:
-				print(connection)
-				target = host_to_index[connection[0]]
-
-				#print('source: ' + str(source) + ' target: ' + str(target) + ' port: ' + str(connection[1]))
-				if (source, target, connection[1]) not in link_list:
-					link_list.append((source, target, connection[1]))
-
-		for link1 in link_list:
-			source = link1[0]
-			target = link1[1]
-			port1 = link1[2]
-			for link2 in link_list:
-				port2 = link2[2]
-				print('source: ' + str(source) + ' target: ' + str(target) + ' port1: ' + str(port1) + ' port2: ' + str(port2))
-				if source == link2[1] and target == link2[0]:
-					link = { 'source': source, 'target': target, 'sport': port1, 'tport': port2 }
-					links.append(link)"""
-					#print('source: ' + str(source) + ' target: ' + str(target) + ' port1: ' + str(port1) + ' port2: ' + str(port2))
-
-
-
-		"""for node in node_list:
-			connections = node['connections']
-			if connections:
-				source = node_list.index(node)
-				for connection in connections:
-					for connection2 in node_list:
-						if connection[0] in connection2.values():
-							print('connection[0]: ' + str(connection[0]))
-							print('source: ' + str(source))
-							print('connection2: ' + str(connection2))
-							print('index connection[0]: ' + str(node_list.index(connection[0])))
-							link = { 'source': source, 'target': node_list.index(connection2) }"""
-
-		"""for link in links:
-			source = link['source']
-			target = link['target']
+		# Eliminate double connections
+		for link1 in links:
 			for link2 in links:
-				if target == link2['source'] and source == link2['target']:
-					del links[links.index(link2)]"""
+				if link1['source'] == link2['target']:
+					if link1['target'] == link2['source']:
+						if link1['sport'] == link2['tport']:
+							if link1['tport'] == link2['sport']:
+								print('delete link')
+								print(link1)
+								links.remove(link1)
+
+		print('')
+		for link in links:
+			print(link)
+
 
 		return links
 
@@ -1130,6 +1094,7 @@ def main():
 	crawler.initialize()
 	crawler.crawl()
 	crawler.generate_json()
+	subprocess.call('./startinbrowser.sh')
 
 if __name__ == '__main__':
 	main()
