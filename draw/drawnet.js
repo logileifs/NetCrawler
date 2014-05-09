@@ -9,7 +9,8 @@ var linkNormal = 2,
     chargeNormal = -550,
     chargeMore = -550,
     current,
-    showPortNbrs = false;
+    showPortNbrs = false,
+    colorType ="";
 
 var vis = d3.select("#network")
     .append("svg:svg")
@@ -78,21 +79,20 @@ function draw(json) {
     .enter().append("svg:circle")
     .attr("class", "node")
     .attr("rel", "popover")
-		.attr("data-original-title", function(d){return '<div class="panel-heading"><b>Host </b>'+d.id+'</div>'})
+		.attr("data-original-title", function(d){return '<div class="panel-heading"><b>Host '+parseId(d.id)+'</b></div>'})
 		.attr("data-content", function(d){return createHTML(d)})
 		.attr("id", function(d) { return d.id; })
     .attr("cx", function(d) { return d.x; })
     .attr("cy", function(d) { return d.y; })
     .attr("r", nodeNormal)
-    .style("fill", function(d) { return typeColoring(d.type, d.types); })
-    .call(force.drag)
+    .style("fill", function(d) { return coloring(parseType(d.type, d.types)) })
     .on('click', function(d){
-      d3.select(current).style("stroke", function(d) { return typeColoring(d.type, d.types); })
+      d3.select(current)//.style("stroke", function(d) { return coloring(parseType(d.type, d.types)) })
       .transition().attr("r", nodeNormal)
       .duration(200);
       if(current != this) {
           current = this;
-          d3.select(this).style("stroke", "black")
+          d3.select(this)//.style("stroke", "black")
           .transition()
           .attr("r", nodeBold)
           .duration(200);
@@ -213,9 +213,9 @@ function draw(json) {
     $(".node").each(function () {
         if (!$(this).is(e.target) && $(this).has(e.target).length === 0 && $('.popover').has(e.target).length === 0) {
             $(this).popover('hide');
-            d3.select(this).style("stroke", function(d) { return typeColoring(d.type, d.types); })
-      .transition().attr("r", nodeNormal)
-      .duration(200);  
+            d3.select(this)
+              .transition().attr("r", nodeNormal)
+              .duration(200);  
         }
     });
   });
@@ -241,9 +241,42 @@ function draw(json) {
                                         return path});
   });
 
-  var div = d3.select("body").append("div")   
-    .attr("class", "tooltip")               
-    .style("opacity", 0);
+  $(document).on('click', '.dropdown-menu li a', function () {
+            colorType = $(this).text().toLowerCase();
+            
+            d3.selectAll(".node").style("fill", function(d) { return coloring(parseType(d.type, d.types))})
+                                 .style("stroke", function(d) { return coloring(parseType(d.type, d.types))});
+            //coloring(colorType);
+        });
+
+  function coloring(type) {
+    if(colorType === "") {
+      return "#39C0B3";
+    }
+    else if(colorType === type) {
+      return "#E98931";
+    }
+    else if(colorType === type) {
+      return "#E98931";
+    }
+    else if(colorType === type) {
+      return "#E98931";
+    }
+    else if(type === "router/switch") {
+     if (colorType === "router" || colorType === "switch") 
+      return "#E98931";
+     else 
+      return "#39C0B3";
+    }
+    else
+      return "#39C0B3";
+  
+  };
+
+
+var div = d3.select("body").append("div")   
+        .attr("class", "tooltip")               
+        .style("opacity", 0);
 };
 
 function parseType(type, types) {
@@ -284,8 +317,14 @@ function typeColoring(type, types) {
     return "#EB403B";
 }
 
+function parseId(id) {
+  return id.substr(4);
+}
+
 $( document ).ready(function() {
     $.getJSON("net.json", function(json) {
       draw(json);
     });
+
+
 });
