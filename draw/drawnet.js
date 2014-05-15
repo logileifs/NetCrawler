@@ -4,8 +4,8 @@ var width = 1500,
 
 var linkNormal = 2,
     linkBold = 4,
-    nodeNormal = 5,
-    nodeBold = 8,
+    nodeNormal = 7,
+    nodeBold = 10,
     chargeNormal = -550,
     chargeMore = -550,
     current,
@@ -18,7 +18,7 @@ var vis = d3.select("#network")
       .attr("height", height)
       .attr("pointer-events", "all")
     .append('svg:g')
-      .call(d3.behavior.zoom().on("zoom", redraw))
+      .call(d3.behavior.zoom().on("zoom", rescale))
     .append('svg:g');
 
 vis.append('svg:rect')
@@ -26,34 +26,11 @@ vis.append('svg:rect')
     .attr('height', height)
     .attr('fill', 'white');
 
-function redraw() {
+function rescale() {
   vis.attr("transform",
       "translate(" + d3.event.translate + ")"
       + " scale(" + d3.event.scale + ")");
 }
-
-function createHTML(d){
-		var html = '<ul class="list-group">';
-    html += '<li class="list-group-item"><strong>Name: </strong><span id="name">'+d.name+'</span></li>';
-    html += '<li class="list-group-item"><strong>Serial number: </strong><span id="serial">'+d.serial+'</span></li>';
-    html += '<li class="list-group-item"><strong>Model number: </strong><span id="model">'+d.model+'</span></li>';
-              
-    html += '<li class="list-group-item"><div id="dd'+d.id+'" class="btn-group"><button type="button" class="btn btn-default dropdown-toggle macs" data-toggle="dropdown">MAC addresses</button><ul id="host0ul" class="dropdown-menu">';
-
-    for(var i=0; i<d.macs.length; i++)
-    	html += '<li><a href="#">'+d.macs[i]+'</a></li>';
-
-    html += '</ul>';//</ul>';
-    html += '<li class="dropdown list-group-item"><button class="btn btn-default dropdown-toggle ips" data-toggle="dropdown" href="#">IP addresses<b class="caret"></b></button><ul class="dropdown-menu">';
-
-    for(var i=0; i<d.ips.length; i++)
-      html += '<li><a href="#">'+d.ips[i]+'</a></li>';
-
-    html += '</ul>';//</ul>';
-    html += '</ul>';
-
-    return html;
-	}
 
 function draw(json) {
   var force = d3.layout.force()
@@ -273,7 +250,6 @@ function draw(json) {
   
   };
 
-
 var div = d3.select("body").append("div")   
         .attr("class", "tooltip")               
         .style("opacity", 0);
@@ -319,6 +295,33 @@ function typeColoring(type, types) {
 
 function parseId(id) {
   return id.substr(4);
+}
+
+function createHTML(d){
+    var html = '<ul class="list-group">';
+    html += '<li class="list-group-item"><strong>Name: </strong><span id="name">'+d.name+'</span></li>';
+    html += '<li class="list-group-item"><strong>Type: </strong><span id="model">'+parseType(d.type, d.types)+'</span></li>';
+    html += '<li class="list-group-item"><strong>Serial number: </strong><span id="serial">'+d.serial+'</span></li>';
+    html += '<li class="list-group-item"><strong>Model number: </strong><span id="model">'+d.model+'</span></li>';         
+
+    // Generate HTML for mac dropdown
+    html += '<li class="list-group-item dropdown"><strong>Mac: </strong><span class="dropdown-toggle" style="cursor:pointer" data-toggle="dropdown" href="#">';
+    html += d.macs[0]+'</span> <span class="caret"></span><ul class="dropdown-menu">';
+    for(var i=1; i<d.macs.length; i++)
+      html += '<li><a href="#">'+d.macs[i]+'</a></li>';
+    html += '</ul>';
+    html += '</li>';
+
+    // Generate HTML for ip dropdown
+    html += '<li class="list-group-item dropdown"><strong>IP: </strong><span class="dropdown-toggle" style="cursor:pointer" data-toggle="dropdown" href="#">';
+    html += d.ips[0]+'</span> <span class="caret"></span><ul class="dropdown-menu">';
+    for(var i=1; i<d.ips.length; i++)
+      html += '<li><a href="#">'+d.ips[i]+'</a></li>';
+
+    html += '</ul>';
+    html += '</li>';
+
+    return html;
 }
 
 $( document ).ready(function() {
